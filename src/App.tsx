@@ -75,5 +75,5 @@ export function App() {
       </>
     );
   }
-  return <><Library key={accountScope} sessionBoards={sessionBoards.current} onOpen={open} /><div style={{position:"fixed",right:180,top:12,zIndex:30}}>{accountButton}</div>{accountPanel}</>;
+  return <><Library key={accountScope} sessionBoards={sessionBoards.current} onOpen={open} accountControl={accountButton} cloudReady={cloudConfigured}/>{accountPanel}</>;
 }
