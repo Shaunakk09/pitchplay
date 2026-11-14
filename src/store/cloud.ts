@@ -30,8 +30,10 @@ declare global {
 }
 
 const config = window.PITCHPLAY_CONFIG ?? {};
-const url = config.supabaseUrl?.trim() || '';
-const key = config.supabasePublishableKey?.trim() || '';
+// Vercel/Vite settings take precedence; local cloud-config.js remains an optional fallback.
+// Both values are PUBLIC browser configuration. Never use a service_role or secret key here.
+const url = (import.meta.env.VITE_SUPABASE_URL || config.supabaseUrl || '').trim();
+const key = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || config.supabasePublishableKey || '').trim();
 export const cloudConfigured = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(url) && /^(sb_publishable_[\w-]+|eyJ[\w.-]+)$/.test(key);
 let client: Client | null = null;
 let user: CloudUser | null = null;
@@ -119,9 +121,10 @@ async function upload(board: Board, owner: string, epoch: number) {
   if (inFlight.has(board.id)) { queueCloudSave(board); return; }
   if (JSON.stringify(board).length > 1500000) throw Error('Board is too large for cloud sync');
   inFlight.add(board.id);
+  let saveConfirmed = false;
   try {
     const remote = cloudVersions.get(board.id);
-    if (remote && remote.local >= board.revision) return;
+    if (remote && remote.local >= board.revision) { saveConfirmed = true; return; }
     const c = await sdk();
     const result = remote
       ? await c.from('pitchplay_tactics').update({ title: board.title, board, revision: remote.remote + 1, updated_at: new Date().toISOString() }).eq('id', board.id).eq('user_id', owner).eq('revision', remote.remote).select('revision').maybeSingle()
@@ -130,7 +133,12 @@ async function upload(board: Board, owner: string, epoch: number) {
     if (result.error?.code === '23505' || (!result.data && !result.error)) { status('conflict'); return; }
     if (result.error) fail(result.error);
     cloudVersions.set(board.id, { remote: result.data.revision, local: board.revision }); saveVersions();
-  } finally { inFlight.delete(board.id); if (pending.size === 0 && user?.id === owner) status('saved'); }
+    saveConfirmed = true;
+  } finally {
+    inFlight.delete(board.id);
+    // A failed request or an optimistic-concurrency conflict is NOT a cloud save.
+    if (saveConfirmed && pending.size === 0 && user?.id === owner && accountEpoch === epoch) status('saved');
+  }
 }
 export async function syncCloudLibrary(listLocal: () => Promise<Board[]>, putLocal: (board: Board) => Promise<void>) {
   if (!user) return;
