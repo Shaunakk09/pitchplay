@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Icon } from './kit';
 import { cloudConfigured, type CloudUser, signIn, signOut, signUp, resetPassword, updatePassword, type CloudState } from '../store/cloud';
 
 export function AccountDialog({ user, status, recovery, onClose, onSync, onImportGuest }: {
@@ -23,7 +24,7 @@ export function AccountDialog({ user, status, recovery, onClose, onSync, onImpor
   return <div className="account-backdrop" onClick={onClose}>
     <section className="account-dialog" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="PitchPlay account">
       <div className="account-head"><div><span className="account-kicker">YOUR PLAYBOOK</span><h2>{user && !recovery ? 'Your account' : mode==='signup' ? 'Create your account' : mode==='reset' ? 'Reset password' : mode==='password' ? 'Set a new password' : 'Welcome back'}</h2><p>{user && !recovery ? 'Your private tactics, across your devices.' : 'Your ideas are worth saving.'}</p></div><button className="iconbtn" onClick={onClose} aria-label="Close account dialog">×</button></div>
-      {!cloudConfigured ? <div className="account-body"><p>Cloud accounts are not yet connected. Guest editing and local saving remain available.</p><p className="account-small">Connect a dedicated Supabase project using the setup instructions in the repository README.</p></div>
+      {!cloudConfigured ? <div className="account-body account-coming"><span className="cloud-symbol">☁</span><h3>Keep building, even offline.</h3><p>Tactics are currently saved on this device. Cross-device accounts will activate once PitchPlay has its own Supabase project.</p><div className="account-saving-tip"><Icon name="check" size={17}/> Export a .pitchplay file to keep a backup.</div><button type="button" className="btn primary wide" onClick={onClose}>Continue as guest</button></div>
       : user && !recovery ? <div className="account-body">
           <div className="account-identity"><span className="account-round">●</span><div><strong>{user.email || 'Signed in'}</strong><p>{status === 'saved' ? 'Your tactics are backed up' : status === 'offline' ? 'Saved locally · cloud unavailable' : status === 'conflict' ? 'Conflict detected · review copies' : 'Cloud synchronization active'}</p></div></div>
           <button className="btn wide" disabled={busy} onClick={() => void action(onSync)}>Sync your tactics now</button>
