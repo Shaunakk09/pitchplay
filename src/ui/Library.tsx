@@ -1,5 +1,5 @@
 // Library and create sheet (BRD-001 to BRD-013).
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Board, Format, Slot } from '../domain/types';
 import { BOARD_DELETE_UNDO_MS, FORMATS, LEN, TEAM_TOKENS } from '../domain/params';
 import * as ops from '../domain/ops';
@@ -21,7 +21,7 @@ const ago = (iso: string) => {
   return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id: string, initial?: Board) => void }) {
+export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id: string, initial?: Board) => void; accountControl?: ReactNode; cloudReady?: boolean }) {
   const [boards, setBoards] = useState<Board[] | null>(null);
   const [available, setAvailable] = useState(true);
   const [nearlyFull, setNearlyFull] = useState(false);
@@ -152,20 +152,13 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
       }}
     >
       <header className="lib-head">
-        <h1 className="wordmark">
-          Pitch<span>Play</span>
-        </h1>
-        <div className="lib-actions">
-          <button type="button" className="btn hide-narrow" onClick={() => void openExample()}>
-            Example
-          </button>
-          <button type="button" className="btn" onClick={() => pickProjectFile(setImportFile)}>
-            <Icon name="file" size={18} /> Open file
-          </button>
-          <button type="button" className="btn primary" onClick={() => setCreating(true)}>
-            <Icon name="plus" size={18} /> New board
-          </button>
-        </div>
+        <div className="brand-lockup"><span className="brand-symbol" aria-hidden="true">P</span><div><h1 className="wordmark">pitch<span>play.</span></h1><small>TACTICAL STUDIO</small></div></div>
+        <nav className="lib-actions" aria-label="Workspace actions">
+          <button type="button" className="btn hide-narrow" onClick={() => void openExample()}>Explore example</button>
+          <button type="button" className="btn nav-file" onClick={() => pickProjectFile(setImportFile)}><Icon name="file" size={18}/><span>Open file</span></button>
+          <button type="button" className="btn primary nav-create" onClick={() => setCreating(true)}><Icon name="plus" size={18}/><span>New tactic</span></button>
+          {props.accountControl}
+        </nav>
       </header>
 
       {!available && (
@@ -185,7 +178,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
       {!previewNoteOff && (
         <div className="preview-note" role="note">
           <span>
-            <b>Early preview.</b> Boards are kept in this browser only. Export a project file to keep a copy or move it to another device.
+            <b>Your tactics, your way.</b> {props.cloudReady ? 'Sign in to sync between devices, or keep working as a guest.' : 'Guest boards are saved on this device. Export a .pitchplay file to back up your work until cloud sync is enabled.'}
           </span>
           <button type="button" className="btn small ghost" onClick={() => setPreviewNoteOff(true)}>
             Got it
@@ -196,28 +189,41 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
       {boards === null ? (
         <p className="center-note">Loading boards.</p>
       ) : boards.length === 0 && !snack ? (
-        <div className="empty">
-          <div className="empty-pitch" aria-hidden="true">
-            <i />
-            <i />
-            <i />
+        <div className="welcome">
+          <section className="welcome-copy">
+            <span className="welcome-eyebrow"><i/> YOUR NEXT PLAY STARTS HERE</span>
+            <h2>See the game.<br/><em>Shape the play.</em></h2>
+            <p>Turn football ideas into moments your team can see. Arrange your players, draw the runs, and watch every move unfold.</p>
+            <div className="welcome-actions">
+              <button type="button" className="btn primary big" onClick={() => setCreating(true)}><Icon name="plus" size={19}/> Create your first tactic</button>
+              <button type="button" className="btn big" onClick={() => void openExample()}><Icon name="play" size={17}/> Explore example</button>
+            </div>
+            <div className="welcome-assurances"><span><Icon name="check" size={15}/> Works on mobile</span><span><Icon name="check" size={15}/> No setup required</span><span><Icon name="check" size={15}/> Free to try</span></div>
+          </section>
+          <div className="welcome-art">
+            <div className="art-head"><span><i/> TACTICAL BOARD</span><span>01 / 03 <Icon name="play" size={14}/></span></div>
+            <svg viewBox="0 0 700 465" aria-label="Football tactics pitch with a passing combination and player runs" role="img">
+              <defs><linearGradient id="ppGreen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#246b48"/><stop offset="1" stopColor="#123d2b"/></linearGradient><marker id="ppArrow" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" stroke="#cbfa8f" strokeWidth="1.8" fill="none"/></marker></defs>
+              <rect x="0" y="0" width="700" height="465" rx="14" fill="url(#ppGreen)"/>
+              {[1,3,5,7].map(i=><rect key={i} x={i*78} y="12" width="78" height="440" fill="#ffffff" opacity=".032"/>)}
+              <g stroke="#effce9" strokeWidth="2.7" fill="none" opacity=".66"><rect x="22" y="18" width="656" height="428"/><path d="M350 18V446"/><circle cx="350" cy="232" r="59"/><path d="M22 145H130V320H22M678 145H570V320H678M22 190H66V274H22M678 190H634V274H678"/></g>
+              <path d="M205 290Q319 269 434 165" stroke="#ccfa88" strokeWidth="6" strokeDasharray="12 12" fill="none" markerEnd="url(#ppArrow)"/>
+              <path d="M212 191Q314 126 403 138" stroke="#eaffce" strokeWidth="3" strokeDasharray="5 9" opacity=".8" fill="none"/>
+              {([[72,232,'1'],[159,156,'4'],[162,327,'3'],[282,232,'8'],[420,158,'7'],[430,334,'9']] as [number,number,string][]).map(([cx,cy,n])=><g key={'h'+n}><circle cx={cx} cy={cy} r="20" fill="#c9f783" stroke="#123d2b" strokeWidth="5"/><text x={cx} y={cy+6} textAnchor="middle" fill="#123423" fontWeight="800" fontSize="18">{n}</text></g>)}
+              {([[626,232,'1'],[540,144,'2'],[543,328,'5'],[396,233,'6'],[492,235,'8']] as [number,number,string][]).map(([cx,cy,n])=><g key={'a'+n}><circle cx={cx} cy={cy} r="20" fill="#fb9f80" stroke="#46261e" strokeWidth="5"/><text x={cx} y={cy+6} textAnchor="middle" fill="#38201b" fontWeight="800" fontSize="18">{n}</text></g>)}
+              <circle cx="288" cy="210" r="8" fill="#fff" stroke="#174532" strokeWidth="4"/>
+            </svg>
+            <div className="art-foot"><span><strong>Build-up pattern</strong><small>4–3–3 · Phase 01</small></span><span className="art-live">● READY TO PLAY</span></div>
           </div>
-          <p className="empty-line">Build a tactic, play it, share it.</p>
-          <p className="empty-sub">Set up both teams, draw runs and passes, add phases and watch the move play out. Export it as an image, a storyboard or a video.</p>
-          <div className="lib-actions">
-            <button type="button" className="btn primary big" onClick={() => setCreating(true)}>
-              New board
-            </button>
-            <button type="button" className="btn big" onClick={() => void openExample()}>
-              See an example
-            </button>
+          <div className="welcome-features">
+            <div><span className="feature-icon"><Icon name="formation" size={21}/></span><strong>Design your shape</strong><p>Set up teams from 5v5 to 11v11, in seconds.</p></div>
+            <div><span className="feature-icon"><Icon name="run" size={21}/></span><strong>Animate each move</strong><p>Build runs, passing lanes and sequences.</p></div>
+            <div><span className="feature-icon"><Icon name="export" size={21}/></span><strong>Show your team</strong><p>Share diagrams, clips and editable tactics.</p></div>
           </div>
-          <button type="button" className="linkbtn" onClick={() => pickProjectFile(setImportFile)}>
-            Or open a .pitchplay file
-          </button>
         </div>
       ) : (
         <>
+          <div className="collection-title"><div><span>YOUR PLAYBOOK</span><h2>All tactics <small>{boards.length}</small></h2><p>Pick a board to keep building.</p></div><button type="button" className="btn primary" onClick={() => setCreating(true)}><Icon name="plus" size={17}/> New tactic</button></div>
           <label className="search">
             <Icon name="search" size={18} />
             <input type="search" placeholder="Search boards" aria-label="Search boards by title" value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -321,62 +327,41 @@ function CreateSheet({ onClose, onCreate }: { onClose: () => void; onCreate: (sp
     TEAM_TOKENS.map((t) => ({ value: t, hex: TEAM_COLORS[t].hex, name: TEAM_COLORS[t].name, disabled: t === theirs && t !== mine, note: t === theirs ? `Used by ${theirName}` : undefined }));
   const preview = ops.createBoard({ format, presetA, presetB, colorA, colorB, teamAAttacks: attacks });
   return (
-    <Modal
-      title="New board"
-      onClose={onClose}
-      wide
-      sheet
-      footer={
-        <>
-          <button type="button" className="btn" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="button" className="btn primary" onClick={() => onCreate({ title, format, presetA, presetB, nameA: a, nameB: b, colorA, colorB, primary, teamAAttacks: attacks })}>
-            Create
-          </button>
-        </>
-      }
-    >
-      <div className="field">
-        <label htmlFor="new-title">Title</label>
-        <input id="new-title" value={title} maxLength={LEN.title} onChange={(e) => setTitle(e.target.value)} onFocus={(e) => e.target.select()} />
-      </div>
-      <Segmented label="Format" value={format} options={FORMATS.map((f) => ({ value: f, label: f }))} onChange={pickFormat} />
-      <div className="preview-thumb">
-        <PhaseThumb board={preview} index={0} w={300} h={194} />
-      </div>
-      <div className="create-teams">
-        <section className="group">
-          <TextField label="Team A name" value={nameA} maxLength={LEN.team} onCommit={(v) => setNameA(v.trim() || 'HOME')} />
-          <Select label="Formation" value={presetA} options={PRESETS[format].map((p) => ({ value: p.name, label: p.name }))} onChange={setPresetA} />
-          <Swatches label="Color" value={colorA} options={swatches(colorA, colorB, b)} onChange={setColorA} />
-        </section>
-        <section className="group">
-          <TextField label="Team B name" value={nameB} maxLength={LEN.team} onCommit={(v) => setNameB(v.trim() || 'AWAY')} />
-          <Select label="Formation" value={presetB} options={PRESETS[format].map((p) => ({ value: p.name, label: p.name }))} onChange={setPresetB} />
-          <Swatches label="Color" value={colorB} options={swatches(colorB, colorA, a)} onChange={setColorB} />
-        </section>
-      </div>
-      <div className="grid2">
-        <Segmented
-          label="Primary team"
-          value={primary}
-          options={[
-            { value: 'A', label: a },
-            { value: 'B', label: b },
-          ]}
-          onChange={setPrimary}
-        />
-        <Segmented
-          label={`${a} attacks`}
-          value={attacks}
-          options={[
-            { value: 'right', label: 'Right' },
-            { value: 'left', label: 'Left' },
-          ]}
-          onChange={setAttacks}
-        />
+    <Modal title="Create a tactic" onClose={onClose} wide sheet className="setup-modal"
+      footer={<><span className="setup-tip"><Icon name="check" size={16}/> You can change these later</span>
+        <button type="button" className="btn" onClick={onClose}>Cancel</button>
+        <button type="button" className="btn primary" onClick={() => onCreate({title,format,presetA,presetB,nameA:a,nameB:b,colorA,colorB,primary,teamAAttacks:attacks})}>Create board <Icon name="plus" size={16}/></button></>}>
+      <div className="setup-intro"><span>YOUR STARTING LINE-UP</span><p>Customize both teams, then jump straight into the tactical board.</p></div>
+      <div className="setup-layout">
+        <div className="setup-fields">
+          <div className="field"><label htmlFor="new-title">Tactic name</label><input id="new-title" value={title} maxLength={LEN.title} onChange={e=>setTitle(e.target.value)} onFocus={e=>e.target.select()}/></div>
+          <Segmented label="Players on the pitch" value={format} options={FORMATS.map(f=>({value:f,label:f}))} onChange={pickFormat}/>
+          <div className="create-teams">
+            <section className="setup-team">
+              <div className="setup-team-head"><span className="setup-avatar" style={{background:TEAM_COLORS[colorA].hex}}>A</span><div><strong>Home team</strong><small>TEAM A</small></div></div>
+              <TextField label="Team name" value={nameA} maxLength={LEN.team} onCommit={v=>setNameA(v.trim()||'HOME')}/>
+              <Select label="Formation" value={presetA} options={PRESETS[format].map(p=>({value:p.name,label:p.name}))} onChange={setPresetA}/>
+              <Swatches label="Kit colour" value={colorA} options={swatches(colorA,colorB,b)} onChange={setColorA}/>
+            </section>
+            <section className="setup-team">
+              <div className="setup-team-head"><span className="setup-avatar" style={{background:TEAM_COLORS[colorB].hex}}>B</span><div><strong>Away team</strong><small>TEAM B</small></div></div>
+              <TextField label="Team name" value={nameB} maxLength={LEN.team} onCommit={v=>setNameB(v.trim()||'AWAY')}/>
+              <Select label="Formation" value={presetB} options={PRESETS[format].map(p=>({value:p.name,label:p.name}))} onChange={setPresetB}/>
+              <Swatches label="Kit colour" value={colorB} options={swatches(colorB,colorA,a)} onChange={setColorB}/>
+            </section>
+          </div>
+          <div className="grid2 setup-options">
+            <Segmented label="Primary team" value={primary} options={[{value:'A',label:a},{value:'B',label:b}]} onChange={setPrimary}/>
+            <Segmented label={a+' attacks'} value={attacks} options={[{value:'right',label:'Right'},{value:'left',label:'Left'}]} onChange={setAttacks}/>
+          </div>
+        </div>
+        <aside className="setup-preview" aria-label="Live formation preview">
+          <span className="setup-preview-kicker">● LIVE PREVIEW</span>
+          <div className="setup-preview-pitch"><PhaseThumb board={preview} index={0} w={300} h={194}/></div>
+          <strong>{a} <em>vs</em> {b}</strong><p>{format} · {presetA} / {presetB}</p>
+          <div className="setup-preview-note"><Icon name="run" size={17}/> Create the board to draw player runs, passes and phases.</div>
+        </aside>
       </div>
     </Modal>
   );
-}
+
