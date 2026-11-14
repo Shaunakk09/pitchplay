@@ -108,12 +108,12 @@ function useFocusTrap(open: boolean, onClose: () => void) {
   return ref;
 }
 
-export function Modal(props: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean; sheet?: boolean }) {
+export function Modal(props: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; wide?: boolean; sheet?: boolean; className?: string }) {
   const ref = useFocusTrap(true, props.onClose);
   const id = useId();
   return (
     <div className="scrim" onPointerDown={(e) => e.target === e.currentTarget && props.onClose()}>
-      <div ref={ref} className={`modal ${props.wide ? 'wide' : ''} ${props.sheet ? 'as-sheet' : ''}`} role="dialog" aria-modal="true" aria-labelledby={id}>
+      <div ref={ref} className={`modal ${props.wide ? 'wide' : ''} ${props.sheet ? 'as-sheet' : ''} ${props.className ?? ''}`} role="dialog" aria-modal="true" aria-labelledby={id}>
         <header className="modal-head">
           <h2 id={id}>{props.title}</h2>
           <IconButton icon="close" label="Close" onClick={props.onClose} />
