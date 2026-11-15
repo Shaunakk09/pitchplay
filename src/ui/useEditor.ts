@@ -79,7 +79,7 @@ export function sanitizeSelection(board: Board, phaseIdx: number, sel: Selection
   return { players, ball: sel.ball, movementId, annotationId };
 }
 
-export function useEditor(loaded: LoadResult, available: boolean) {
+export function useEditor(loaded: LoadResult, available: boolean, viewOnly = false) {
   const [board, setBoardState] = useState<Board>(loaded.board);
   const boardRef = useRef(board);
   const [preview, setPreview] = useState<Board | null>(null);
@@ -93,7 +93,7 @@ export function useEditor(loaded: LoadResult, available: boolean) {
   const camRef = useRef<Cam | null>(null);
   const gestureRef = useRef<{ cancel: () => boolean }>({ cancel: () => false });
   const [status, setStatus] = useState<SaveStatus>(available ? 'saved' : 'session');
-  const [readOnly, setReadOnly] = useState<null | 'other' | 'moved'>(null);
+  const [readOnly, setReadOnly] = useState<null | 'other' | 'moved' | 'viewer'>(viewOnly ? 'viewer' : null);
   const [restoredFrom, setRestoredFrom] = useState<string | null>(loaded.restoredFrom);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const [announcement, setAnnouncement] = useState('');
@@ -420,7 +420,8 @@ export function useEditor(loaded: LoadResult, available: boolean) {
   const release = useRef<(() => void) | null>(null);
   const takeOver = useRef<() => void>(() => undefined);
   useEffect(() => {
-    if (!available || typeof navigator === 'undefined' || !navigator.locks || typeof BroadcastChannel === 'undefined') return;
+    // View-only public previews never acquire an edit lock or become writable via takeover.
+    if (viewOnly || !available || typeof navigator === 'undefined' || !navigator.locks || typeof BroadcastChannel === 'undefined') return;
     const name = `pitchplay-board-${boardId}`;
     const channel = new BroadcastChannel('pitchplay');
     let disposed = false;
@@ -455,7 +456,7 @@ export function useEditor(loaded: LoadResult, available: boolean) {
       release.current = null;
       channel.close();
     };
-  }, [available, boardId, reload, saver]);
+  }, [available, boardId, reload, saver, viewOnly]);
 
   // ---------- shared actions ----------
   const selectRef = useCallback(
