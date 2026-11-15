@@ -12,14 +12,14 @@ export interface PublicTactic {
   publishedAt: string | null;
   board: Board;
 }
-export interface BoardMember { user_id: string; role: 'viewer' | 'editor'; joined_at: string }
+export interface BoardMember { user_id: string; member_email: string; role: 'viewer' | 'editor'; joined_at: string }
 export interface BoardInvite {
   id: string; board_id: string; email: string; role: 'viewer' | 'editor';
   status: 'pending' | 'accepted'; created_at: string;
 }
 export interface CloudRevision {
   id: number; board_id: string; remote_revision: number;
-  board: Board; title: string; actor_id: string | null;
+  board: Board; title: string; actor_id: string | null; actor_email: string | null;
   action: 'create' | 'save' | 'publish' | 'unpublish'; created_at: string;
 }
 export interface ShareSettings { is_public: boolean; description: string; tags: string[]; published_at: string | null; user_id: string; revision: number }
@@ -73,7 +73,7 @@ export async function acceptInvitation(invite:BoardInvite): Promise<void> {
 export async function listBoardPeople(boardId:string):Promise<{members:BoardMember[];invites:BoardInvite[]}> {
   const c=await cloudClient();
   const [members,invites]=await Promise.all([
-    c.from('pitchplay_board_members').select('user_id,role,joined_at').eq('board_id',boardId).limit(150),
+    c.from('pitchplay_board_members').select('user_id,member_email,role,joined_at').eq('board_id',boardId).limit(150),
     c.from('pitchplay_board_invites').select('id,board_id,email,role,status,created_at').eq('board_id',boardId).limit(150)
   ]);
   return {members:check(members)||[],invites:check(invites)||[]};
@@ -105,7 +105,7 @@ export async function removeBoardMember(boardId:string,userId:string):Promise<vo
 export async function cloudHistory(boardId:string):Promise<CloudRevision[]> {
   const c=await cloudClient();
   return check(await c.from('pitchplay_board_versions')
-    .select('id,board_id,remote_revision,board,title,actor_id,action,created_at')
+    .select('id,board_id,remote_revision,board,title,actor_id,actor_email,action,created_at')
     .eq('board_id',boardId).order('id',{ascending:false}).limit(100)) || [];
 }
 export async function favoriteBoard(boardId:string,on:boolean):Promise<void> {
