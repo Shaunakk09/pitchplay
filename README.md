@@ -36,3 +36,8 @@ PitchPlay must use its **own Supabase organization and project**, completely sep
 6. A production deployment was triggered from **`main`** and GitHub reports Vercel success. **Still to verify end-to-end:** email signup and confirmation, login, password reset, per-user cloud storage, cross-device sync, conflicts and offline editing with two separate test users before calling production ready.
 
 **Status:** Backend and frontend configuration are connected. Email redirect allowlisting and user-journey verification remain. Guest boards continue saving locally.
+
+
+## Install PitchPlay as an app
+
+PitchPlay is an installable progressive web app (PWA), not a separate mobile codebase. The same GitHub/Vercel website can be added to the home screen on Android or iPhone. See [the installation guide](docs/INSTALL-AS-APP.md). Cloud saving still uses the dedicated PitchPlay Supabase project.

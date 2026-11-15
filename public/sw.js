@@ -1,39 +1,52 @@
-// PitchPlay offline support (PER-002): after the first load the app shell is served from cache.
-// Boards live in IndexedDB, so stored boards open offline too.
-const CACHE = 'pitchplay-v1';
-
+// PitchPlay PWA: fetch the latest app shell first while retaining offline editing.
+// Private tactics live in IndexedDB; Supabase requests bypass this cache.
+const CACHE = 'pitchplay-shell-v2';
+const CORE = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.png'];
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(['./', './index.html']))
-      .then(() => self.skipWaiting()),
-  );
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));
 });
-
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches
-      .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim()),
-  );
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('pitchplay-') && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
-
 self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
-  event.respondWith(
-    caches.open(CACHE).then(async (cache) => {
-      const cached = await cache.match(req, { ignoreSearch: req.mode === 'navigate' });
-      const fresh = fetch(req)
-        .then((res) => {
-          if (res.ok) cache.put(req, res.clone());
-          return res;
-        })
-        .catch(() => cached || cache.match('./index.html'));
-      // Cached copy first for speed; the network refreshes it for the next visit.
-      return cached || fresh;
-    }),
-  );
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+  if (request.mode === 'navigate') {
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(request);
+        if (response.ok) {
+          const cache = await caches.open(CACHE);
+          // Never cache query strings containing authentication codes.
+          await cache.put('/index.html', response.clone());
+        }
+        return response;
+      } catch {
+        const cache = await caches.open(CACHE);
+        return (await cache.match('/index.html')) || (await cache.match('/')) || Response.error();
+      }
+    })());
+    return;
+  }
+  if (url.pathname === '/cloud-config.js' || url.pathname === '/sw.js') {
+    event.respondWith(fetch(request).catch(async () => (await caches.open(CACHE)).match(request) || Response.error()));
+    return;
+  }
+  if (url.pathname.startsWith('/assets/')) {
+    // Vite fingerprints asset names, so immutable files are safe to cache.
+    event.respondWith(caches.open(CACHE).then(async cache => {
+      const hit = await cache.match(request);
+      if (hit) return hit;
+      const response = await fetch(request);
+      if (response.ok) await cache.put(request, response.clone());
+      return response;
+    }));
+    return;
+  }
+  event.respondWith(fetch(request).then(async response => {
+    if (response.ok) (await caches.open(CACHE)).put(request, response.clone());
+    return response;
+  }).catch(async () => (await caches.open(CACHE)).match(request) || Response.error()));
 });

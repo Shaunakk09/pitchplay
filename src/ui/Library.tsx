@@ -12,6 +12,7 @@ import { ImportDialog, pickProjectFile } from './ImportDialog';
 import { Confirm, Icon, Menu, Modal, Segmented, Select, Swatches, TextField, download, safeName, type MenuState } from './kit';
 import { PhaseThumb } from './PhaseRail';
 import { devicePref, setDevicePref } from './useEditor';
+import { InstallApp } from './InstallApp';
 
 const ago = (iso: string) => {
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -160,6 +161,8 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
           {props.accountControl}
         </nav>
       </header>
+
+      <InstallApp />
 
       {!available && (
         <div className="banner" role="alert">

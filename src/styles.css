@@ -2291,3 +2291,17 @@ body{background:#f7faf5}
   .editor.compact .mobile-phase-strip{display:none}
   .editor.compact .playback{height:42px;min-height:42px}
 }
+
+
+/* PitchPlay installable PWA: invite users to add this SAME website to their phone. */
+.install-app{display:flex;align-items:center;gap:12px;background:linear-gradient(110deg,#153d2a,#225f3a);border-radius:15px;color:#fff;padding:12px 14px;margin:3px 0 16px;box-shadow:0 8px 24px #0d352316;position:relative}
+.install-app-icon{flex:none;border-radius:12px;width:49px;height:49px;background:#214d33}
+.install-app-copy{min-width:0;flex:1}.install-app-copy strong{font-size:14px;font-weight:800;line-height:1.35;display:block}.install-app-copy p{font-size:12px;line-height:1.45;color:#c3e4ca;margin:2px 0 0}
+.install-app .install-app-action{display:flex;align-items:center;gap:4px;white-space:nowrap;background:#cafa91;color:#143725;border:0;border-radius:10px;min-height:43px;padding:7px 12px;font-weight:800;font-size:13px;flex:none}
+.install-app .install-app-action:hover{background:#e3ffb8}
+.install-app-dismiss{position:absolute;right:4px;top:3px;border:0;background:transparent;color:#c3e4ca;min-height:30px;min-width:30px;padding:5px;display:grid;place-items:center;border-radius:8px}
+.install-instructions{display:flex;flex-direction:column;gap:13px;font-size:14px;line-height:1.6;color:#355542}
+.install-instructions>img{border-radius:17px}.install-instructions p{margin:0}.install-instructions ol{margin:0;padding-left:22px;display:grid;gap:10px}
+.install-instructions li{padding-left:3px}.install-instructions small{line-height:1.5;color:#657d6b}
+@media(max-width:640px){.install-app{margin:8px 0 16px;padding:11px 11px;gap:10px;border-radius:13px}.install-app-copy strong{font-size:12.5px}.install-app-copy p{font-size:11px;line-height:1.35}.install-app-icon{width:42px;height:42px;border-radius:10px}.install-app .install-app-action{min-width:40px;min-height:44px;padding:5px 10px;font-size:12px;margin-right:11px}.install-app .install-app-action svg{display:none}}
+@media(max-width:365px){.install-app-copy p{display:none}.install-app{gap:8px}.install-app .install-app-action{padding:6px 7px;margin-right:9px}}
