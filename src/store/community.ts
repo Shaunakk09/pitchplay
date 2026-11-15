@@ -84,7 +84,8 @@ export async function inviteToBoard(boardId:string,email:string,role:'viewer'|'e
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) throw Error('Enter a valid email address');
   const c=await cloudClient();
   // A repeat invitation can be updated by the owner (including role changes).
-  const existing=check(await c.from('pitchplay_board_invites').select('id').eq('board_id',boardId).eq('email',normalized).maybeSingle());
+  const existing=check(await c.from('pitchplay_board_invites').select('id,status').eq('board_id',boardId).eq('email',normalized).maybeSingle());
+  if(existing?.status==='accepted') throw Error('This teammate already joined. Change their access in the Members section.');
   if(existing) check(await c.from('pitchplay_board_invites').update({role,status:'pending'})
     .eq('id',existing.id).select('id').maybeSingle());
   else check(await c.from('pitchplay_board_invites').insert({
