@@ -23,6 +23,7 @@ export function App() {
   const [cloudStatus, setCloudStatus] = useState<CloudState>('guest');
   const [accountScope, setAccountScope] = useState('guest');
   const [authLoading, setAuthLoading] = useState(true);
+  const [accessReady, setAccessReady] = useState(false);
   useEffect(() => {
     onCloudStatus(setCloudStatus);
     void startCloud((next) => {
@@ -32,7 +33,12 @@ export function App() {
       setAccountScope(next?.id || 'guest');
       setBoardId(null);
       if (location.hash.startsWith('#board-')) location.hash = '#boards';
-      if (next) void syncCloudLibrary(listBoards, async (board) => putBoard(board, null)).then(() => setAccountScope(next.id + '-ready')).catch((e) => console.warn('Cloud library unavailable', e));
+      setAccessReady(false);
+      if (next) void syncCloudLibrary(listBoards, async (board) => putBoard(board, null))
+        .then(() => setAccountScope(next.id + '-ready'))
+        .catch((e) => console.warn('Cloud library unavailable', e))
+        .finally(() => setAccessReady(true));
+      else setAccessReady(true);
     }, () => { setRecover(true); setAccountOpen(true); })
       .catch((e) => console.warn('Cloud account unavailable', e)).finally(() => setAuthLoading(false));
     return () => onCloudStatus(() => undefined);
@@ -70,7 +76,7 @@ export function App() {
   };
   const backToLibrary = () => { location.hash = '#boards'; };
   const showDiscover = () => { location.hash = '#discover'; };
-  if (authLoading && cloudConfigured) return <div className="center-note">Loading your playbook…</div>;
+  if ((authLoading && cloudConfigured) || (account && !accessReady)) return <div className="center-note">Loading permissions and your playbook…</div>;
   if (boardId) {
     return (
       <>
