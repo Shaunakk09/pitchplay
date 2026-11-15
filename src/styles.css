@@ -2113,3 +2113,181 @@ body{background:#f7faf5}
 @media(max-width:640px){.library{padding:0 16px 64px}.lib-head{min-height:74px;gap:8px;margin-bottom:15px}.brand-symbol{width:35px;height:35px;border-radius:11px;font-size:23px}.brand-lockup{gap:8px}.library .wordmark{font-size:19px}.brand-lockup small{font-size:8px}.library .lib-actions{gap:5px;margin-left:auto}.library .lib-actions .btn{min-height:40px;height:40px;padding:0 10px}.library .nav-file span,.library .nav-create span{display:none}.library .lib-actions .account-launch{min-width:40px;max-width:40px;height:40px;padding:8px}.preview-note{font-size:10.5px;padding:10px 11px}.preview-note .btn{font-size:11px;padding:0 8px}.welcome{padding-top:20px;gap:25px}.welcome-copy h2{font-size:clamp(44px,11vw,62px);margin:18px 0}.welcome-copy>p{font-size:14px;margin-bottom:23px}.welcome-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.welcome-actions .btn{padding:10px 8px;font-size:11px;line-height:1.3;white-space:normal;text-align:center;min-height:52px}.welcome-assurances{font-size:10px;gap:8px 13px;margin-top:18px}.welcome-art{padding:10px;border-radius:19px}.art-head{font-size:9px}.art-foot strong{font-size:12px}.art-live{font-size:9px;padding:7px 9px}.welcome-features{grid-template-columns:1fr;gap:9px}.welcome-features>div{padding:14px}.collection-title{margin:22px 0}.collection-title h2{font-size:27px}.collection-title .btn{font-size:11px}.library .board-list{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.library .board-card{padding:7px;border-radius:13px}.library .board-title{font-size:13px;padding:11px 25px 0 4px}.library .board-meta{font-size:10px}.library .board-more{right:3px;bottom:6px}
 .scrim{padding:0;align-items:end}.scrim .modal.setup-modal{width:100%;max-height:calc(100dvh - env(safe-area-inset-top) - 6px);border-radius:22px 22px 0 0;border-bottom:0}.setup-modal .modal-head{padding:16px 17px 12px}.setup-modal .modal-head h2{font-size:20px}.setup-modal .modal-body{padding:13px 15px 18px;scrollbar-gutter:auto;overflow-y:auto}.setup-modal .modal-foot{padding:11px 14px calc(11px + env(safe-area-inset-bottom));gap:7px}.setup-modal .modal-foot .btn{min-height:44px;flex:1;font-size:12px;padding:0 9px}.setup-modal .modal-foot .btn.primary{flex:1.3}.setup-tip{display:none}.setup-intro{display:block}.setup-intro span{font-size:9px}.setup-intro p{text-align:left;margin:5px 0 0;font-size:11px}.setup-layout{grid-template-columns:1fr;gap:14px}.setup-preview{position:static;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:4px 11px;padding:12px 13px}.setup-preview-kicker{grid-column:1/-1}.setup-preview-pitch{grid-column:1;grid-row:2/5;margin:6px 0 0}.setup-preview>strong{grid-column:2;font-size:12px}.setup-preview>p{grid-column:2;font-size:10px}.setup-preview-note{grid-column:2;font-size:10px;border-top:0;padding:0}.setup-modal .create-teams{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.setup-team{padding:9px 7px;gap:10px}.setup-team-head{gap:7px}.setup-avatar{width:28px;height:28px;font-size:12px}.setup-team-head strong{font-size:12px}.setup-team-head small{font-size:9px}.setup-fields .field label,.setup-fields .field-label{font-size:11px}.setup-fields input,.setup-fields select{max-width:100%;min-width:0;font-size:12px;min-height:40px;padding-left:7px;padding-right:7px}.setup-team .swatches{gap:9px 2px}.setup-team .swatch{min-height:22px}.setup-fields .segmented button{font-size:10px;padding:8px 2px}.setup-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.account-dialog{width:100%;max-height:95dvh;border-radius:22px 22px 0 0}}
 @media(max-width:370px){.brand-lockup small{display:none}.library .wordmark{font-size:17px}.brand-symbol{width:31px;height:31px}.welcome-actions{grid-template-columns:1fr}.welcome-actions .btn{font-size:12px}.setup-team{padding:8px 5px}.setup-team .swatches{gap:6px 1px}.setup-team .swatch{min-height:20px}}
+
+
+/* PitchPlay mobile-first editing pass — phone layout v1 */
+/* Phone screens prioritize the tactical surface: a short command bar, the pitch,
+   and a deliberately collapsible phase tray. The inspector never shifts the pitch
+   merely because an object has been selected. */
+.mobile-phase-heading,.mobile-setup-steps,.mobile-step-back,.mobile-step-next{display:none!important}
+@media(max-width:640px){
+  html,body,#root{max-width:100%;min-width:0;overflow-x:hidden}
+  body{overscroll-behavior-y:none}
+  button,input,select,textarea{touch-action:manipulation}
+  button:focus-visible{outline-offset:2px}
+  /* Landing / personal library */
+  .library{padding:0 16px calc(32px + env(safe-area-inset-bottom));width:100%;max-width:none;overflow-x:hidden}
+  .lib-head{min-height:64px;margin:0 -16px 14px;padding:9px 14px;gap:8px;flex-wrap:nowrap;background:#fff;box-shadow:0 1px 0 #d9e5d6;position:relative;z-index:1}
+  .brand-lockup,.lib-head .wordmark{min-width:0}
+  .brand-lockup small{display:none}
+  .lib-actions{gap:5px;flex-wrap:nowrap;min-width:0;margin-left:auto}
+  .lib-actions .btn{min-height:44px;min-width:40px;padding:8px 11px;border-radius:12px;white-space:nowrap}
+  .lib-actions .nav-file span,.lib-actions .nav-create span{display:none}
+  .account-launch{width:44px;height:44px;min-width:44px!important;max-width:44px!important;flex:none}
+  .preview-note{width:100%;margin:5px 0 15px;padding:11px 12px;display:flex;align-items:flex-start;gap:10px;font-size:11.5px;line-height:1.5}
+  .preview-note .btn{min-width:54px;min-height:40px;padding:7px;font-size:11px}
+  .welcome{padding-top:10px;gap:17px}
+  .welcome-copy h2{font-size:clamp(37px,10.8vw,54px);line-height:1.03;letter-spacing:-.058em;margin:13px 0 13px;max-width:14ch}
+  .welcome-copy>p{font-size:14px;line-height:1.65;margin-bottom:18px;max-width:38ch}
+  .welcome-actions{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:9px}
+  .welcome-actions .btn{width:100%;min-height:50px;padding:10px 8px;white-space:normal;font-size:12px;line-height:1.3;border-radius:12px}
+  .welcome-assurances{gap:6px 11px;line-height:1.6;flex-wrap:wrap}
+  .welcome-art{max-width:100%;padding:10px;margin:3px 0 0;border-radius:17px}
+  .welcome-features{display:grid;grid-template-columns:1fr;gap:9px;margin-top:12px}
+  .welcome-features>div{min-width:0;padding:12px 13px;border-radius:13px}
+  .collection-title{gap:8px;margin:23px 0 15px}
+  .collection-title h2{font-size:24px;line-height:1.2}
+  .collection-title .btn{min-height:43px;padding:8px 10px}
+  .library .board-list{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px}
+  .library .board-card{padding:9px;border-radius:16px}
+  .board-open{width:100%}.board-card canvas{border-radius:12px}
+  .library .board-title{font-size:15px}.library .board-meta{font-size:12px}
+  .search{max-width:none;width:100%;min-height:46px;border-radius:13px}
+  .search input{font-size:16px}
+  /* Editor: only actionable, concise controls remain above the pitch. */
+  .editor.compact{width:100%;max-width:100vw;height:100dvh;min-height:0;overflow:hidden;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto minmax(0,1fr) auto auto auto;grid-template-areas:'top' 'view' 'ban' 'stage' 'insp' 'bottom' 'tools';background:#f2f6f1}
+  .editor.compact .topbar{min-height:calc(52px + env(safe-area-inset-top));height:auto;padding:calc(5px + env(safe-area-inset-top)) 9px 5px;gap:4px;background:#fff;border-bottom:1px solid #e2e9e0}
+  .editor.compact .topbar .title{font-weight:760;flex:1 1 auto;max-width:none;min-width:0;font-size:14px;padding:0 3px;text-align:left}
+  .editor.compact .topbar .title-input{min-width:0;max-width:140px}
+  .editor.compact .topbar .save-status{font-size:0;padding:0 2px;flex:none;min-width:12px}
+  .editor.compact .topbar .save-status i{width:9px;height:9px}
+  .editor.compact .topbar .iconbtn{min-width:39px;min-height:42px;flex:none;border-radius:11px}
+  .editor.compact .topbar .spacer{display:none}
+  .editor.compact .viewbar{height:43px;min-height:43px;padding:4px 9px;gap:5px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;background:#fff;white-space:nowrap}
+  .editor.compact .viewbar .view-as-switch{display:none}
+  .editor.compact .viewbar .sep{display:none}
+  .editor.compact .viewbar .seg-track{flex:none}
+  .editor.compact .viewbar .chip{min-height:34px;padding:6px 9px;border-radius:9px;flex:none;font-size:11.5px}
+  .editor.compact .viewbar .select-chip{max-width:132px;min-width:112px}
+  .editor.compact .viewbar .select-chip select{max-width:100%;font-size:11.5px}
+  .editor.compact .viewbar .spacer{display:none}
+  .editor.compact .banners{padding:5px 8px;max-height:100px;overflow:auto}
+  .editor.compact .banner{font-size:11px;line-height:1.45;padding:8px;gap:5px}
+  .editor.compact .stage-wrap{min-height:0;min-width:0;background:radial-gradient(ellipse at 50% 43%,#e8f0e8,#dae6d9 100%);overflow:hidden}
+  .editor.compact .stage{min-width:0;min-height:0;border-radius:0}
+  .editor.compact .stage canvas{border-radius:0}
+  .editor.compact .tool-options{height:46px;min-height:46px;max-height:46px;padding:5px 9px;gap:9px;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;border-bottom:1px solid #dce6dc;color:#536b5a;background:#fcfffb}
+  .editor.compact .tool-options .segmented{flex:none;gap:3px;min-width:max-content}
+  .editor.compact .tool-options .segmented button{min-height:36px;padding:4px 10px;border-radius:8px;font-size:12px}
+  .editor.compact .tool-options>span{font-size:11px;white-space:nowrap;flex:none}
+  .editor.compact .coach{left:12px;right:12px;bottom:12px;transform:none;max-width:none;gap:6px;padding:10px;border-radius:12px;font-size:11px;box-shadow:0 5px 24px #07170a24}
+  .editor.compact .coach .btn{min-height:36px;flex:1}
+  /* Inspector: pinned compact heading; expanded settings are an overlay. */
+  .editor.compact .inspector.collapsed{min-height:42px;height:42px;max-height:42px;border-top:1px solid #dce9dc;border-bottom:1px solid #dce9dc;background:#fff}
+  .editor.compact .inspector-head{min-height:42px;height:42px;padding:2px 8px 2px 13px;gap:4px}
+  .editor.compact .inspector-title{min-height:38px;text-align:left;font-size:12.5px;letter-spacing:-.01em;font-weight:720}
+  .editor.compact .inspector .iconbtn{min-width:38px;min-height:38px;border-radius:9px}
+  .editor.compact .inspector.half,.editor.compact .inspector.full{position:fixed;inset:auto 0 0;max-height:min(68dvh,620px);min-height:200px;z-index:45;border-radius:21px 21px 0 0;border:1px solid #bdd3bd;background:#fff;box-shadow:0 -10px 50px #0b241c45;overflow:hidden;padding-bottom:env(safe-area-inset-bottom)}
+  .editor.compact .inspector.full{max-height:91dvh}
+  .editor.compact .inspector.half .inspector-head,.editor.compact .inspector.full .inspector-head{min-height:58px;height:58px;padding:9px 14px;flex:none;box-shadow:0 1px 0 #e6ece6}
+  .editor.compact .inspector.half .inspector-title,.editor.compact .inspector.full .inspector-title{font-size:17px;font-weight:800}
+  .editor.compact .inspector-body{padding:15px 16px 24px;overflow-y:auto;overscroll-behavior:contain}
+  /* Compact playback; phase cards open only on request. */
+  .editor.compact .mobile-bottom{display:flex;flex-direction:column;min-width:0;border-top:1px solid #d9e3d8;background:#fff}
+  .editor.compact .mobile-phase-heading{display:flex!important;align-items:center;gap:6px;min-height:39px;padding:3px 10px 0}
+  .editor.compact .mobile-phase-toggle{display:flex;align-items:center;gap:7px;flex:1;min-width:0;border:0;background:#edf5ed;color:#22462e;border-radius:10px;padding:7px 10px;min-height:36px;text-align:left}
+  .editor.compact .mobile-phase-number{font-size:12px;font-weight:820;white-space:nowrap}
+  .editor.compact .mobile-phase-number small{font-size:10px;font-weight:600;color:#7b987f}
+  .editor.compact .mobile-phase-name{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px;color:#607762}
+  .editor.compact .mobile-phase-add{display:flex;align-items:center;justify-content:center;gap:4px;min-width:62px;min-height:36px;padding:6px 9px;border:1px solid #cfe2ce;background:#fff;border-radius:10px;font-size:11px;font-weight:740;color:#245839}
+  .editor.compact .mobile-phase-add:disabled{opacity:.35}
+  .editor.compact .mobile-phase-strip{display:none;overflow:hidden}
+  .editor.compact .phases-expanded .mobile-phase-strip{display:block;border-top:1px solid #eef2ed}
+  .editor.compact .phase-rail{padding:9px 11px 5px;gap:10px;scroll-snap-type:x proximity;overscroll-behavior-x:contain}
+  .editor.compact .phase-card{width:88px;scroll-snap-align:start}
+  .editor.compact .phase-card .phase-pick{border-radius:9px}
+  .editor.compact .phase-add{width:82px;height:58px;min-width:82px}
+  .editor.compact .phase-meta{min-height:26px}
+  .editor.compact .phase-name{font-size:11px}
+  .editor.compact .playback{height:47px;min-height:47px;padding:2px 9px 5px;gap:4px;justify-content:space-between}
+  .editor.compact .playback .iconbtn{min-width:37px;min-height:40px;max-width:43px;flex:none}
+  .editor.compact .play-btn{width:43px;height:43px;margin:0 2px;flex:none}
+  .editor.compact .scrub{min-width:60px;flex:1;margin:0 4px}
+  .editor.compact .playback .progress{font-size:10px}
+  /* Persistent thumb-friendly dock with explicit states */
+  .editor.compact .tools.dock{height:calc(66px + env(safe-area-inset-bottom));min-height:calc(66px + env(safe-area-inset-bottom));max-height:calc(66px + env(safe-area-inset-bottom));padding:7px 5px calc(6px + env(safe-area-inset-bottom));gap:3px;justify-content:space-around;border-top:1px solid #d6e4d4;background:#fff;box-shadow:0 -4px 20px #08200d0d}
+  .editor.compact .tools.dock .tool{min-width:0;max-width:72px;min-height:48px;flex:1;border-radius:11px;gap:3px;padding:6px 1px;font-size:10px;font-weight:680;color:#516657}
+  .editor.compact .tools.dock .tool svg{width:21px;height:21px}
+  .editor.compact .tools.dock .tool[aria-pressed=true]{color:#fff;background:#245838;box-shadow:0 3px 9px #24583838}
+  .editor.compact .tools.dock .tool:disabled{opacity:.4}
+  /* Sheet-like contextual menus instead of tiny popovers at the finger. */
+  .menu-scrim{background:#04150b85;backdrop-filter:blur(3px)}
+  .menu{left:0!important;top:auto!important;right:0!important;bottom:0!important;width:100%;max-width:none;min-width:0;max-height:75dvh;padding:12px 10px calc(12px + env(safe-area-inset-bottom));border-radius:21px 21px 0 0;box-shadow:0 -10px 48px #0004;overscroll-behavior:contain}
+  .menu::before{content:'';width:44px;height:4px;background:#d2ded0;border-radius:4px;display:block;margin:1px auto 8px}
+  .menu-title{font-size:12px;font-weight:800;color:#486b53;padding:8px 12px}
+  .menu button{min-height:49px;border-radius:12px;padding:12px 13px;font-size:14px;font-weight:600}
+  /* Mobile setup is a three-step flow with one team card per row. */
+  .mobile-setup-steps{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:13px}
+  .mobile-setup-steps button{display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #dae8da;background:#f5faf3;border-radius:10px;min-height:42px;font-size:11px;font-weight:750;color:#6a806e}
+  .mobile-setup-steps button span{display:grid;place-items:center;background:#e2ede0;border-radius:50%;width:20px;height:20px;font-size:10px;flex:none}
+  .mobile-setup-steps button[aria-current=step]{background:#e1f0e2;border-color:#85bf96;color:#255e38}
+  .mobile-setup-steps button[aria-current=step] span{background:#2d6a42;color:#fff}
+  .setup-modal .setup-intro{display:block;margin:0 0 14px}
+  .setup-modal .setup-intro span{font-size:10px;font-weight:840}
+  .setup-modal .setup-intro p{font-size:12px;margin-top:4px;line-height:1.55;color:#617866}
+  .setup-modal .setup-layout{display:block;min-width:0}
+  .setup-modal .setup-fields{gap:16px}
+  .setup-modal .create-teams{grid-template-columns:minmax(0,1fr);gap:12px}
+  .setup-modal .setup-team{padding:15px;border-radius:14px;gap:13px}
+  .setup-modal .setup-team-head{gap:10px}
+  .setup-modal .setup-avatar{width:38px;height:38px}
+  .setup-modal .setup-fields input,.setup-modal .setup-fields select{font-size:16px;min-height:47px;padding:10px 12px;border-radius:11px}
+  .setup-modal .setup-fields .segmented{width:100%;gap:3px}
+  .setup-modal .setup-fields .segmented button{min-height:43px;font-size:13px;padding:8px 4px}
+  .setup-modal .setup-team .swatches{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:13px 8px;justify-items:center;padding:8px 5px 9px;overflow:visible}
+  .setup-modal .setup-team .swatch{width:min(40px,100%);min-height:37px;aspect-ratio:1;border-radius:11px}
+  .setup-modal .setup-options{grid-template-columns:1fr;gap:13px}
+  .setup-modal .setup-preview{display:block;position:static;margin-top:15px;padding:17px;border-radius:15px}
+  .setup-modal .setup-preview-kicker{display:block}
+  .setup-modal .setup-preview-pitch{width:100%;margin:14px 0}
+  .setup-modal .setup-preview>strong{display:block;font-size:16px}
+  .setup-modal .setup-preview>p{font-size:12px}
+  .setup-modal .setup-preview-note{font-size:12px;border-top:1px solid #ffffff24;padding-top:10px;margin-top:12px}
+  .setup-modal .setup-layout[data-mobile-step="0"] .create-teams,.setup-modal .setup-layout[data-mobile-step="0"] .setup-options,.setup-modal .setup-layout[data-mobile-step="0"] .setup-preview{display:none}
+  .setup-modal .setup-layout[data-mobile-step="1"] .setup-fields>.field,.setup-modal .setup-layout[data-mobile-step="1"] .setup-fields>.segmented,.setup-modal .setup-layout[data-mobile-step="1"] .setup-options,.setup-modal .setup-layout[data-mobile-step="1"] .setup-preview{display:none}
+  .setup-modal .setup-layout[data-mobile-step="2"] .setup-fields>.field,.setup-modal .setup-layout[data-mobile-step="2"] .setup-fields>.segmented,.setup-modal .setup-layout[data-mobile-step="2"] .create-teams{display:none}
+  .setup-modal .modal-head{padding:18px 17px 13px}
+  .setup-modal .modal-body{padding:14px 17px 24px;overflow-y:auto;overscroll-behavior:contain}
+  .setup-modal .modal-foot{position:sticky;bottom:0;z-index:2;padding:12px 15px calc(13px + env(safe-area-inset-bottom));display:flex;gap:9px;background:#fff}
+  .setup-modal .setup-cancel{display:none}
+  .setup-modal .mobile-step-back{display:flex!important;flex:1;align-items:center;justify-content:center;min-height:49px;border-radius:11px}
+  .setup-modal .mobile-step-next{display:flex!important;flex:1.45;align-items:center;justify-content:center;min-height:49px;border-radius:11px}
+  .setup-modal .mobile-step-next.hide-mobile-step,.setup-modal .setup-create-submit.show-desktop-only-create{display:none!important}
+  .setup-modal .setup-create-submit{flex:1.45;min-height:49px;border-radius:11px}
+  .scrim .modal.setup-modal{max-height:calc(100dvh - env(safe-area-inset-top) - 6px);overflow:hidden}
+  .setup-modal .modal-body{min-height:0}
+  /* Avoid iOS zooming the form when a text input receives focus. */
+  .account-form input,.setup-modal input,.setup-modal select{font-size:16px}
+  .account-dialog{max-height:calc(100dvh - 6px);overflow-y:auto;overscroll-behavior:contain}
+}
+@media(max-width:375px){
+  .editor.compact .topbar{gap:1px;padding-left:4px;padding-right:4px}
+  .editor.compact .topbar .iconbtn{min-width:36px}
+  .editor.compact .mobile-phase-name{max-width:90px}
+  .editor.compact .viewbar .chip{font-size:11px;padding:6px 7px}
+  .editor.compact .tools.dock .tool{font-size:9px;gap:2px}
+  .welcome-actions{grid-template-columns:1fr}
+  .setup-modal .setup-team{padding:12px}
+  .setup-modal .setup-team .swatches{gap:11px 5px}
+}
+/* In short landscape, keep the stage dominant and collapse the timeline. */
+@media(max-width:1024px) and (max-height:480px) and (orientation:landscape){
+  .editor.compact{grid-template-columns:58px minmax(0,1fr);grid-template-rows:43px 38px auto minmax(0,1fr) auto auto;grid-template-areas:'top top' 'view view' 'ban ban' 'tools stage' 'insp insp' 'bottom bottom'}
+  .editor.compact .tools.dock{height:auto;min-height:0;max-height:none;padding:5px 3px;flex-direction:column;overflow-y:auto;border-right:1px solid #d6e4d4}
+  .editor.compact .tools.dock .tool{flex:none;min-height:44px}
+  .editor.compact .tools.dock .tool span{display:none}
+  .editor.compact .inspector.collapsed{min-height:38px;height:38px}
+  .editor.compact .mobile-phase-heading{min-height:35px}
+  .editor.compact .mobile-phase-strip{display:none}
+  .editor.compact .playback{height:42px;min-height:42px}
+}
