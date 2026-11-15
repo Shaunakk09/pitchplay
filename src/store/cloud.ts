@@ -41,10 +41,12 @@ let onAuth: ((account: CloudUser | null) => void) | null = null;
 let onPasswordRecovery: (() => void) | null = null;
 let onCloudState: ((state: CloudState) => void) | null = null;
 const cloudVersions = new Map<string, { remote: number; local: number }>();
-export type BoardAccess = 'owner' | 'editor' | 'viewer';
+export type BoardAccess = 'owner' | 'editor' | 'viewer' | 'revoked';
 const boardPermissions = new Map<string, BoardAccess>();
 // A board without a remote access record is a newly created private local board.
-export const getBoardAccess = (id: string): BoardAccess => boardPermissions.get(id) ?? 'owner';
+// Previously synchronized boards with no current membership must never default to editor.
+export const getBoardAccess = (id: string): BoardAccess =>
+  boardPermissions.get(id) ?? (cloudVersions.has(id) ? 'revoked' : 'owner');
 export const cloudClient = sdk;
 const pending = new Map<string, ReturnType<typeof setTimeout>>();
 const inFlight = new Set<string>();
@@ -111,7 +113,7 @@ export async function signOut() { const { error } = await (await sdk()).auth.sig
 
 // Module hooks deliberately avoid a cyclic dependency on the IndexedDB store.
 export function queueCloudSave(board: Board) {
-  if (!user || suppressWrites || getBoardAccess(board.id) === 'viewer') return;
+  if (!user || suppressWrites || !['owner','editor'].includes(getBoardAccess(board.id))) return;
   const account = user.id, epoch = accountEpoch;
   const old = pending.get(board.id); if (old) clearTimeout(old);
   status('syncing');
@@ -130,7 +132,7 @@ async function upload(board: Board, owner: string, epoch: number) {
   try {
     const remote = cloudVersions.get(board.id);
     const role = getBoardAccess(board.id);
-    if (role === 'viewer') return;
+    if (role === 'viewer' || role === 'revoked') return;
     if (role === 'editor' && !remote) { status('conflict'); return; }
     if (remote && remote.local >= board.revision) { saveConfirmed = true; return; }
     const c = await sdk();
@@ -189,7 +191,8 @@ export async function syncCloudLibrary(listLocal: () => Promise<Board[]>, putLoc
     local.delete(row.id);
   }
   for (const b of local.values()) {
-    if (!cloudVersions.has(b.id) && getBoardAccess(b.id) === 'owner') queueCloudSave(b);
+    if (cloudVersions.has(b.id)) boardPermissions.set(b.id,'revoked');
+    else if (getBoardAccess(b.id) === 'owner') queueCloudSave(b);
   }
   saveVersions(); status(pending.size ? 'syncing' : 'saved');
 }
