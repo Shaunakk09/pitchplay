@@ -83,7 +83,7 @@ export function App() {
       <EditorScreen
         key={accountScope}
         boardId={boardId}
-        cloudAccess={openedAccess}
+        cloudAccess={openedAccess === 'viewer' ? 'viewer' : getBoardAccess(boardId)}
         initial={sessionBoards.current.get(boardId)}
         onOpen={open}
         onExit={(b) => {
