@@ -14,6 +14,8 @@ import { Confirm, Icon, IconButton, Menu, download, safeName, type MenuItem } fr
 import { PhaseRail, Playback } from './PhaseRail';
 import { FormatDialog, FormationDialog, ObjectsDialog, RosterDialog, SettingsDialog, ShortcutsDialog, VersionsDialog } from './Sheets';
 import { Stage } from './Stage';
+import { CollaborationDialog } from './Collaboration';
+import { type BoardAccess } from '../store/cloud';
 import { LINE_TYPES, devicePref, isLineTool, setDevicePref, useEditor, type Editor, type Tool } from './useEditor';
 
 function useMedia(query: string): boolean {
@@ -27,7 +29,7 @@ function useMedia(query: string): boolean {
   return match;
 }
 
-export function EditorScreen(props: { boardId: string; initial?: Board; onExit: (sessionBoard?: Board) => void; onOpen: (id: string, initial?: Board) => void }) {
+export function EditorScreen(props: { boardId: string; initial?: Board; cloudAccess?: BoardAccess; onExit: (sessionBoard?: Board) => void; onOpen: (id: string, initial?: Board) => void }) {
   const [state, setState] = useState<{ loaded: LoadResult; available: boolean } | 'missing' | null>(null);
   useEffect(() => {
     let live = true;
@@ -54,7 +56,7 @@ export function EditorScreen(props: { boardId: string; initial?: Board; onExit: 
       </div>
     );
   }
-  return <EditorInner key={props.boardId} loaded={state.loaded} available={state.available} onExit={props.onExit} onOpen={props.onOpen} />;
+  return <EditorInner key={props.boardId} loaded={state.loaded} available={state.available} cloudAccess={props.cloudAccess ?? 'owner'} onExit={props.onExit} onOpen={props.onOpen} />;
 }
 
 const TOOLS: { tool: Tool; label: string; key: string }[] = [
@@ -73,8 +75,8 @@ const TOOLS: { tool: Tool; label: string; key: string }[] = [
 const KEY_TOOL: Record<string, Tool> = Object.fromEntries(TOOLS.map((t) => [t.key.toLowerCase(), t.tool]));
 const STATUS_LABEL: Record<string, string> = { saved: 'Saved', saving: 'Saving', failed: 'Save failed', session: 'Session only', conflict: 'Not saved', readonly: 'Read-only' };
 
-function EditorInner({ loaded, available, onExit, onOpen }: { loaded: LoadResult; available: boolean; onExit: (sessionBoard?: Board) => void; onOpen: (id: string, initial?: Board) => void }) {
-  const ed = useEditor(loaded, available);
+function EditorInner({ loaded, available, cloudAccess, onExit, onOpen }: { loaded: LoadResult; available: boolean; cloudAccess: BoardAccess; onExit: (sessionBoard?: Board) => void; onOpen: (id: string, initial?: Board) => void }) {
+  const ed = useEditor(loaded, available, cloudAccess === 'viewer');
   const { board, phaseIdx, view, tool, sel } = ed;
   const compact = useMedia('(max-width: 1024px)');
   const spaceHeld = useRef(false);
@@ -83,6 +85,7 @@ function EditorInner({ loaded, available, onExit, onOpen }: { loaded: LoadResult
   const [importFile, setImportFile] = useState<File | null>(null);
   const [confirmLoadLatest, setConfirmLoadLatest] = useState(false);
   const [sheetFull, setSheetFull] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   // A collapsed timeline keeps the pitch usable on a phone. The controls remain available.
   const [mobilePhasesOpen, setMobilePhasesOpen] = useState(false);
   const primary = ops.primaryTeam(board);
@@ -295,6 +298,7 @@ function EditorInner({ loaded, available, onExit, onOpen }: { loaded: LoadResult
             { label: 'Export', run: () => ed.setDialog({ kind: 'export' }) },
           ]
         : []),
+      { label: 'Share & collaborate', run: () => setShareOpen(true) },
       { label: 'Board settings', run: () => ed.setDialog({ kind: 'settings' }) },
       { label: 'Apply formation', run: () => ed.setDialog({ kind: 'formation' }), disabled: !!ed.readOnly },
       { label: 'Objects', run: () => ed.setDialog({ kind: 'objects' }) },
@@ -526,10 +530,10 @@ function EditorInner({ loaded, available, onExit, onOpen }: { loaded: LoadResult
   if (ed.readOnly)
     banners.push(
       <div key="ro" className="banner" role="status">
-        <span>{ed.readOnly === 'other' ? 'This board is open for editing in another tab.' : 'Editing moved to another tab. This tab is read-only.'}</span>
-        <button type="button" className="btn small" onClick={() => ed.takeOver.current()}>
+        <span>{ed.readOnly === 'viewer' ? 'View-only tactic. Remix it to create an editable copy.' : ed.readOnly === 'other' ? 'This board is open for editing in another tab.' : 'Editing moved to another tab. This tab is read-only.'}</span>
+        {ed.readOnly !== 'viewer' && <button type="button" className="btn small" onClick={() => ed.takeOver.current()}>
           Edit here instead
-        </button>
+        </button>}
       </div>,
     );
   if (ed.restoredFrom)
@@ -582,6 +586,7 @@ function EditorInner({ loaded, available, onExit, onOpen }: { loaded: LoadResult
           {STATUS_LABEL[statusKey]}
         </span>
         <span className="spacer" />
+        {!compact && <button type="button" className="btn ghost" onClick={() => setShareOpen(true)}>Share</button>}
         <IconButton icon="undo" label="Undo" kbd="Ctrl+Z" onClick={ed.undo} disabled={!ed.canUndo || !!ed.readOnly} />
         <IconButton icon="redo" label="Redo" kbd="Ctrl+Shift+Z" onClick={ed.redo} disabled={!ed.canRedo || !!ed.readOnly} />
         {!compact && (
@@ -770,6 +775,10 @@ function EditorInner({ loaded, available, onExit, onOpen }: { loaded: LoadResult
         </div>
       )}
 
+      {shareOpen && <CollaborationDialog board={board} access={cloudAccess} onClose={() => setShareOpen(false)}
+        onRestore={(snapshot) => ed.commit({ ...snapshot, id: ed.boardRef.current.id,
+          createdAt: ed.boardRef.current.createdAt, revision: ed.boardRef.current.revision + 1,
+          updatedAt: new Date().toISOString() }, 'restore cloud version')} />}
       {ed.textEdit && <TextEditor initial={ed.textEdit.text} isNew={!ed.textEdit.id} compact={compact} onCommit={commitText} onCancel={() => ed.setTextEdit(null)} />}
 
       {d?.kind === 'settings' && <SettingsDialog ed={ed} />}
