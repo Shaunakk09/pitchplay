@@ -36,6 +36,7 @@ export function EditorScreen(props: { boardId: string; initial?: Board; cloudAcc
     let live = true;
     setState(null);
     void (async () => {
+      if (props.cloudAccess === 'revoked') { if(live)setState('missing'); return; }
       const available = await storageAvailable();
       // The stored record wins; the in-memory copy is only for browsers without storage.
       const stored = available ? await loadBoard(props.boardId).catch(() => null) : null;
