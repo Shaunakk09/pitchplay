@@ -83,6 +83,8 @@ function EditorInner({ loaded, available, onExit, onOpen }: { loaded: LoadResult
   const [importFile, setImportFile] = useState<File | null>(null);
   const [confirmLoadLatest, setConfirmLoadLatest] = useState(false);
   const [sheetFull, setSheetFull] = useState(false);
+  // A collapsed timeline keeps the pitch usable on a phone. The controls remain available.
+  const [mobilePhasesOpen, setMobilePhasesOpen] = useState(false);
   const primary = ops.primaryTeam(board);
   const other = ops.otherTeam(board);
   const hasSel = sel.players.length > 0 || sel.ball || !!sel.movementId || !!sel.annotationId;
@@ -646,7 +648,7 @@ function EditorInner({ loaded, available, onExit, onOpen }: { loaded: LoadResult
         </label>
         <button
           type="button"
-          className="chip"
+          className="chip view-as-switch"
           disabled={!!ed.readOnly || ed.locked}
           onClick={() => ed.commit(ops.updateBoard(ed.boardRef.current, { primaryTeamId: other.id }), 'change primary team')}
         >
@@ -706,8 +708,19 @@ function EditorInner({ loaded, available, onExit, onOpen }: { loaded: LoadResult
         {(sheetState === 'side' || sheetState === 'half' || sheetState === 'full') && <Inspector ed={ed} />}
       </aside>
 
-      <footer className="bottom">
-        <PhaseRail ed={ed} />
+      <footer className={`bottom ${compact ? 'mobile-bottom' : ''} ${mobilePhasesOpen ? 'phases-expanded' : 'phases-collapsed'}`}>
+        {compact && <div className="mobile-phase-heading">
+          <button type="button" className="mobile-phase-toggle" aria-expanded={mobilePhasesOpen} aria-controls="pitchplay-phase-strip" onClick={() => setMobilePhasesOpen((open) => !open)}>
+            <Icon name="list" size={17} />
+            <span className="mobile-phase-number">Phase {phaseIdx + 1} <small>/ {board.phases.length}</small></span>
+            <span className="mobile-phase-name">{phase.name}</span>
+            <Icon name={mobilePhasesOpen ? 'down' : 'up'} size={17} />
+          </button>
+          <button type="button" className="mobile-phase-add" aria-label="Add phase" disabled={!!ed.readOnly || ed.locked || ops.phasesFull(board)} onClick={() => { ed.addPhase(false); setMobilePhasesOpen(true); }}>
+            <Icon name="plus" size={17} /> <span>Add</span>
+          </button>
+        </div>}
+        <div id="pitchplay-phase-strip" className="mobile-phase-strip"><PhaseRail ed={ed} /></div>
         <Playback ed={ed} compact={compact} />
       </footer>
 
