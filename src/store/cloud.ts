@@ -8,7 +8,7 @@ import { isValidStoredBoard } from '../domain/validate';
 export type CloudUser = { id: string; email?: string };
 export type CloudState = 'guest' | 'syncing' | 'saved' | 'offline' | 'conflict';
 
-type Query = { select: (...args: any[]) => any; eq: (...args: any[]) => any; order: (...args: any[]) => any; limit: (...args: any[]) => any; maybeSingle: () => Promise<any>; single: () => Promise<any> };
+type Query = { select: (...args: any[]) => any; eq: (...args: any[]) => any; in: (...args: any[]) => any; order: (...args: any[]) => any; limit: (...args: any[]) => any; maybeSingle: () => Promise<any>; single: () => Promise<any> };
 type Client = {
   auth: {
     getSession(): Promise<{ data: { session: { user: CloudUser } | null }; error: any }>;
@@ -41,6 +41,11 @@ let onAuth: ((account: CloudUser | null) => void) | null = null;
 let onPasswordRecovery: (() => void) | null = null;
 let onCloudState: ((state: CloudState) => void) | null = null;
 const cloudVersions = new Map<string, { remote: number; local: number }>();
+export type BoardAccess = 'owner' | 'editor' | 'viewer';
+const boardPermissions = new Map<string, BoardAccess>();
+// A board without a remote access record is a newly created private local board.
+export const getBoardAccess = (id: string): BoardAccess => boardPermissions.get(id) ?? 'owner';
+export const cloudClient = sdk;
 const pending = new Map<string, ReturnType<typeof setTimeout>>();
 const inFlight = new Set<string>();
 let accountEpoch = 0;
@@ -92,7 +97,7 @@ function applyUser(next: CloudUser | null) {
   if (user?.id === next?.id) return;
   accountEpoch++;
   for (const timer of pending.values()) clearTimeout(timer);
-  pending.clear(); inFlight.clear(); user = next;
+  pending.clear(); inFlight.clear(); boardPermissions.clear(); user = next;
   if (user) readVersions(); else cloudVersions.clear();
   status(user ? 'syncing' : 'guest');
   onAuth?.(next);
@@ -106,7 +111,7 @@ export async function signOut() { const { error } = await (await sdk()).auth.sig
 
 // Module hooks deliberately avoid a cyclic dependency on the IndexedDB store.
 export function queueCloudSave(board: Board) {
-  if (!user || suppressWrites) return;
+  if (!user || suppressWrites || getBoardAccess(board.id) === 'viewer') return;
   const account = user.id, epoch = accountEpoch;
   const old = pending.get(board.id); if (old) clearTimeout(old);
   status('syncing');
@@ -124,10 +129,13 @@ async function upload(board: Board, owner: string, epoch: number) {
   let saveConfirmed = false;
   try {
     const remote = cloudVersions.get(board.id);
+    const role = getBoardAccess(board.id);
+    if (role === 'viewer') return;
+    if (role === 'editor' && !remote) { status('conflict'); return; }
     if (remote && remote.local >= board.revision) { saveConfirmed = true; return; }
     const c = await sdk();
     const result = remote
-      ? await c.from('pitchplay_tactics').update({ title: board.title, board, revision: remote.remote + 1, updated_at: new Date().toISOString() }).eq('id', board.id).eq('user_id', owner).eq('revision', remote.remote).select('revision').maybeSingle()
+      ? await c.from('pitchplay_tactics').update({ title: board.title, board, revision: remote.remote + 1, updated_at: new Date().toISOString() }).eq('id', board.id).eq('revision', remote.remote).select('revision').maybeSingle()
       : await c.from('pitchplay_tactics').insert({ id: board.id, user_id: owner, title: board.title, board, revision: 1 }).select('revision').maybeSingle();
     if (epoch !== accountEpoch || owner !== user?.id) return;
     if (result.error?.code === '23505' || (!result.data && !result.error)) { status('conflict'); return; }
@@ -143,25 +151,46 @@ async function upload(board: Board, owner: string, epoch: number) {
 export async function syncCloudLibrary(listLocal: () => Promise<Board[]>, putLocal: (board: Board) => Promise<void>) {
   if (!user) return;
   const account = user.id, epoch = accountEpoch;
-  const { data, error } = await (await sdk()).from('pitchplay_tactics').select('id,board,revision').limit(200);
-  if (error) fail(error);
+  const c = await sdk();
+  // Explicit filters are vital: public discovery rows must NEVER be pulled into
+  // a user's private library just because RLS permits public reads.
+  const memberships = await c.from('pitchplay_board_members').select('board_id,role').eq('user_id',account).limit(300);
+  if (memberships.error) fail(memberships.error);
+  const memberRoles = new Map<string, BoardAccess>(
+    ((memberships.data || []) as { board_id: string; role: BoardAccess }[]).map(m => [m.board_id,m.role])
+  );
+  const owned = await c.from('pitchplay_tactics').select('id,user_id,board,revision').eq('user_id',account).limit(200);
+  if (owned.error) fail(owned.error);
+  const shared = memberRoles.size
+    ? await c.from('pitchplay_tactics').select('id,user_id,board,revision').in('id',[...memberRoles.keys()]).limit(200)
+    : {data: [],error:null};
+  if (shared.error) fail(shared.error);
   if (epoch !== accountEpoch || user?.id !== account) return;
+  const rows = new Map<string, { id:string; user_id:string; board:Board; revision:number }>();
+  for (const row of [...(owned.data || []),...(shared.data || [])] as { id:string; user_id:string; board:Board; revision:number }[]) rows.set(row.id,row);
   const local = new Map((await listLocal()).map((b) => [b.id, b]));
-  for (const row of (data || []) as { id: string; board: Board; revision: number }[]) {
+  for (const row of rows.values()) {
     if (!isValidStoredBoard(row.board) || row.id !== row.board.id) continue;
+    const role = row.user_id === account ? 'owner' : memberRoles.get(row.id);
+    if (!role) continue;
+    boardPermissions.set(row.id,role);
     const existing = local.get(row.id), prev = cloudVersions.get(row.id);
     if (existing && JSON.stringify(existing) !== JSON.stringify(row.board) && (!prev || existing.revision !== prev.local)) {
-      // Preserve unsynced work with a separate UUID, never silently overwrite.
-      const copy = { ...existing, id: crypto.randomUUID(), title: existing.title.slice(0, 63) + ' (local copy)' };
-      suppressWrites = true; try { await putLocal(copy); } finally { suppressWrites = false; }
-      queueCloudSave(copy);
+      // Preserve dirty local edits without silently overwriting remote work.
+      // View-only boards are not promoted to writable cloud copies.
+      if (role !== 'viewer') {
+        const copy = { ...existing, id: crypto.randomUUID(), title: existing.title.slice(0, 63) + ' (local copy)' };
+        suppressWrites = true; try { await putLocal(copy); } finally { suppressWrites = false; }
+        queueCloudSave(copy);
+      }
     }
     suppressWrites = true; try { await putLocal(row.board); } finally { suppressWrites = false; }
     cloudVersions.set(row.id, { remote: row.revision, local: row.board.revision });
     local.delete(row.id);
   }
-  // Only upload newly created local boards. Existing server boards are never auto-deleted.
-  for (const b of local.values()) if (!cloudVersions.has(b.id)) queueCloudSave(b);
+  for (const b of local.values()) {
+    if (!cloudVersions.has(b.id) && getBoardAccess(b.id) === 'owner') queueCloudSave(b);
+  }
   saveVersions(); status(pending.size ? 'syncing' : 'saved');
 }
 export async function cloudDelete(boardId: string) {
