@@ -307,6 +307,8 @@ function RenameDialog({ board, onClose, onDone }: { board: Board; onClose: () =>
 // BRD-004: defaults are 5v5, the first preset per team, HOME and AWAY, colors 1 and 2, HOME primary, HOME attacks right.
 function CreateSheet({ onClose, onCreate }: { onClose: () => void; onCreate: (spec: ops.CreateSpec) => void }) {
   const [title, setTitle] = useState('Untitled tactic');
+  // Progressive setup prevents two narrow team cards and a preview from crowding a phone.
+  const [mobileStep, setMobileStep] = useState(0);
   const [format, setFormat] = useState<Format>('5v5');
   const [presetA, setPresetA] = useState(PRESETS['5v5'][0].name);
   const [presetB, setPresetB] = useState(PRESETS['5v5'][0].name);
@@ -329,10 +331,15 @@ function CreateSheet({ onClose, onCreate }: { onClose: () => void; onCreate: (sp
   return (
     <Modal title="Create a tactic" onClose={onClose} wide sheet className="setup-modal"
       footer={<><span className="setup-tip"><Icon name="check" size={16}/> You can change these later</span>
-        <button type="button" className="btn" onClick={onClose}>Cancel</button>
-        <button type="button" className="btn primary" onClick={() => onCreate({title,format,presetA,presetB,nameA:a,nameB:b,colorA,colorB,primary,teamAAttacks:attacks})}>Create board <Icon name="plus" size={16}/></button></>}>
-      <div className="setup-intro"><span>YOUR STARTING LINE-UP</span><p>Customize both teams, then jump straight into the tactical board.</p></div>
-      <div className="setup-layout">
+        <button type="button" className="btn setup-cancel" onClick={onClose}>Cancel</button>
+        <button type="button" className="btn mobile-step-back" disabled={mobileStep===0} onClick={() => setMobileStep(s => Math.max(0,s-1))}>Back</button>
+        <button type="button" className={`btn primary mobile-step-next ${mobileStep === 2 ? 'hide-mobile-step' : ''}`} onClick={() => setMobileStep(s => Math.min(2,s+1))}>Continue <Icon name="next" size={16}/></button>
+        <button type="button" className={`btn primary setup-create-submit ${mobileStep !== 2 ? 'show-desktop-only-create' : ''}`} disabled={!title.trim()} onClick={() => onCreate({title,format,presetA,presetB,nameA:a,nameB:b,colorA,colorB,primary,teamAAttacks:attacks})}>Create board <Icon name="plus" size={16}/></button></>}>
+      <nav className="mobile-setup-steps" aria-label="Create board steps">
+        {['Format','Teams','Preview'].map((label,i)=><button type="button" key={label} aria-current={mobileStep===i ? 'step' : undefined} onClick={() => setMobileStep(i)}><span>{i+1}</span>{label}</button>)}
+      </nav>
+      <div className="setup-intro"><span>{['01 / YOUR TACTIC','02 / MATCH SETUP','03 / READY TO PLAY'][mobileStep]}</span><p>{['Choose a name and playing format.','Pick your two teams and formations.','Review the pitch, then create your board.'][mobileStep]}</p></div>
+      <div className="setup-layout" data-mobile-step={mobileStep}>
         <div className="setup-fields">
           <div className="field"><label htmlFor="new-title">Tactic name</label><input id="new-title" value={title} maxLength={LEN.title} onChange={e=>setTitle(e.target.value)} onFocus={e=>e.target.select()}/></div>
           <Segmented label="Players on the pitch" value={format} options={FORMATS.map(f=>({value:f,label:f}))} onChange={pickFormat}/>
