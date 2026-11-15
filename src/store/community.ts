@@ -1,7 +1,7 @@
 // Community features backed by Supabase RLS, not a hardcoded feed.
 import type { Board } from '../domain/types';
 import { isValidStoredBoard } from '../domain/validate';
-import { cloudClient, cloudConfigured, currentUser, type BoardAccess } from './cloud';
+import { cloudClient, cloudConfigured, currentUser, rememberCloudBoard, type BoardAccess } from './cloud';
 
 export interface PublicTactic {
   id: string;
@@ -126,14 +126,16 @@ export const canEdit = (access:BoardAccess)=>access==='owner'||access==='editor'
 export async function fetchCloudBoard(boardId: string): Promise<{board:Board;access:BoardAccess}|null> {
   if (!cloudConfigured || !/^[0-9a-f-]{36}$/i.test(boardId)) return null;
   const c=await cloudClient();
-  const {data,error}=await c.from('pitchplay_tactics').select('id,user_id,board').eq('id',boardId).maybeSingle();
+  const {data,error}=await c.from('pitchplay_tactics').select('id,user_id,board,revision').eq('id',boardId).maybeSingle();
   if(error)throw new Error(error.message || 'Could not open tactic');
   if(!data || !isValidStoredBoard(data.board))return null;
   const account=currentUser();
-  if(!account)return {board:data.board,access:'viewer'};
-  if(account.id===data.user_id)return {board:data.board,access:'owner'};
+  if(!account) { rememberCloudBoard(boardId,'viewer',data.revision,data.board.revision); return {board:data.board,access:'viewer'}; }
+  if(account.id===data.user_id){ rememberCloudBoard(boardId,'owner',data.revision,data.board.revision);return {board:data.board,access:'owner'}; }
   const {data:member,error:memberError}=await c.from('pitchplay_board_members')
     .select('role').eq('board_id',boardId).eq('user_id',account.id).maybeSingle();
   if(memberError)throw new Error(memberError.message || 'Unable to verify board rights');
-  return {board:data.board,access:member?.role==='editor'?'editor':'viewer'};
+  const access:BoardAccess=member?.role==='editor'?'editor':'viewer';
+  rememberCloudBoard(boardId,access,data.revision,data.board.revision);
+  return {board:data.board,access};
 }
