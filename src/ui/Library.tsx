@@ -35,6 +35,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
     setDevicePref('previewNoteSeen', v);
   };
   const [query, setQuery] = useState('');
+  const [playbookFilter, setPlaybookFilter] = useState<'all'|'mine'|'shared'>('all');
   const [creating, setCreating] = useState(false);
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [renaming, setRenaming] = useState<Board | null>(null);
@@ -120,7 +121,10 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
     props.onOpen(copy.id, available ? undefined : copy);
   };
 
-  const shown = (boards ?? []).filter((b) => b.title.toLowerCase().includes(query.trim().toLowerCase())); // BRD-003
+  const shown = (boards ?? []).filter((b) =>
+    b.title.toLowerCase().includes(query.trim().toLowerCase()) &&
+    (playbookFilter === 'all' || (playbookFilter === 'mine' ? getBoardAccess(b.id)==='owner' : getBoardAccess(b.id)!=='owner'))
+  ); // BRD-003
   const openMenu = (b: Board, el: HTMLElement) => {
     const r = el.getBoundingClientRect();
     const access = getBoardAccess(b.id);
@@ -232,6 +236,10 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
       ) : (
         <>
           <div className="collection-title"><div><span>YOUR PLAYBOOK</span><h2>All tactics <small>{boards.length}</small></h2><p>Pick a board to keep building.</p></div><button type="button" className="btn primary" onClick={() => setCreating(true)}><Icon name="plus" size={17}/> New tactic</button></div>
+          <nav className="community-playbook-scope" aria-label="Playbook filter">
+            {([['all','All tactics'],['mine','Mine'],['shared','Shared with me']] as const).map(([value,label])=>
+              <button key={value} type="button" aria-pressed={playbookFilter===value} onClick={()=>setPlaybookFilter(value)}>{label}{value==='shared'&&<small>{boards.filter(b=>getBoardAccess(b.id)!=='owner').length}</small>}</button>)}
+          </nav>
           <label className="search">
             <Icon name="search" size={18} />
             <input type="search" placeholder="Search boards" aria-label="Search boards by title" value={query} onChange={(e) => setQuery(e.target.value)} />
