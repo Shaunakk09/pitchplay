@@ -19,6 +19,7 @@ export function App() {
   const [openedAccess, setOpenedAccess] = useState<BoardAccess>('owner');
   const [account, setAccount] = useState<CloudUser | null>(currentUser());
   const [accountOpen, setAccountOpen] = useState(false);
+  const [accountMode, setAccountMode] = useState<'login'|'signup'>('login');
   const [recover, setRecover] = useState(false);
   const [cloudStatus, setCloudStatus] = useState<CloudState>('guest');
   const [accountScope, setAccountScope] = useState('guest');
@@ -55,8 +56,13 @@ export function App() {
     }
     setAccountScope(original + '-imported');
   }
-  const accountButton = <button type="button" className="account-launch" onClick={() => { setRecover(false); setAccountOpen(true); }} aria-label={account ? 'Manage your account' : 'Sign in to save tactics online'}>☁ <span>{account?.email?.split('@')[0] || 'Sign in'}</span></button>;
-  const accountPanel = accountOpen && <AccountDialog user={account} status={cloudStatus} recovery={recover} onClose={() => {setRecover(false);setAccountOpen(false);}} onSync={async () => {await syncCloudLibrary(listBoards, async b => putBoard(b,null)); setAccountScope((account?.id || 'guest')+'-synced');}} onImportGuest={copyGuestBoards} />;
+  const openAccount = (mode: 'login'|'signup' = 'login') => {setAccountMode(mode);setRecover(false);setAccountOpen(true);};
+  const accountButton = account ?
+    <button type="button" className="profile-trigger" onClick={() => openAccount()} aria-label={`Manage profile for ${account.email || 'your account'}`} title={account.email || 'Your profile'}>
+      <span className="profile-avatar" aria-hidden="true">{account.email?.charAt(0).toUpperCase() || 'P'}</span><span className="profile-label">Profile</span>
+    </button> :
+    <div className="auth-actions"><button type="button" className="btn auth-login" onClick={() => openAccount('login')}>Log in</button><button type="button" className="btn primary auth-signup" onClick={() => openAccount('signup')}>Sign up</button></div>;
+  const accountPanel = accountOpen && <AccountDialog key={accountMode + String(recover)} initialMode={accountMode} user={account} status={cloudStatus} recovery={recover} onClose={() => {setRecover(false);setAccountOpen(false);}} onSync={async () => {await syncCloudLibrary(listBoards, async b => putBoard(b,null)); setAccountScope((account?.id || 'guest')+'-synced');}} onImportGuest={copyGuestBoards} />;
   // Boards that live only in this tab when the browser offers no storage (PST-007).
   const sessionBoards = useRef(new Map<string, Board>());
   useEffect(() => {
@@ -97,7 +103,7 @@ export function App() {
   }
   if (discover) return <><DiscoverPage key={accountScope} onBack={backToLibrary}
     onOpen={(id,board) => open(id,board,'viewer')}
-    onFork={forkPublic} onSignIn={() => {setRecover(false);setAccountOpen(true);}} />{accountPanel}</>;
+    onFork={forkPublic} onSignIn={() => openAccount()} accountControl={accountButton}/>{accountPanel}</>;
   return <><Library key={accountScope} sessionBoards={sessionBoards.current}
     onOpen={open} onDiscover={showDiscover} accountControl={accountButton}
     cloudReady={cloudConfigured} onInvitationsAccepted={async () => {

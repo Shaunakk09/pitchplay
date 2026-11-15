@@ -15,6 +15,7 @@ import { devicePref, setDevicePref } from './useEditor';
 import { PendingInvitations } from './Discover';
 import { getBoardAccess, type BoardAccess } from '../store/cloud';
 import { InstallApp } from './InstallApp';
+import { BrandMark } from './BrandMark';
 
 const ago = (iso: string) => {
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -160,12 +161,10 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
       }}
     >
       <header className="lib-head">
-        <div className="brand-lockup"><span className="brand-symbol" aria-hidden="true">P</span><div><h1 className="wordmark">pitch<span>play.</span></h1><small>TACTICAL STUDIO</small></div></div>
+        <div className="brand-lockup"><BrandMark/><div><h1 className="wordmark">pitch<span>play.</span></h1><small>TACTICAL STUDIO</small></div></div>
         <nav className="lib-actions" aria-label="Workspace actions">
           <button type="button" className="btn nav-discover" onClick={props.onDiscover}><Icon name="search" size={18}/><span>Discover</span></button>
           <button type="button" className="btn hide-narrow" onClick={() => void openExample()}>Explore example</button>
-          <button type="button" className="btn nav-file" onClick={() => pickProjectFile(setImportFile)}><Icon name="file" size={18}/><span>Open file</span></button>
-          <button type="button" className="btn primary nav-create" onClick={() => setCreating(true)}><Icon name="plus" size={18}/><span>New tactic</span></button>
           {props.accountControl}
         </nav>
       </header>
@@ -210,6 +209,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
               <button type="button" className="btn primary big" onClick={() => setCreating(true)}><Icon name="plus" size={19}/> Create your first tactic</button>
               <button type="button" className="btn big" onClick={() => void openExample()}><Icon name="play" size={17}/> Explore example</button>
             </div>
+            <button type="button" className="welcome-import" onClick={() => pickProjectFile(setImportFile)}><Icon name="file" size={16}/> Have a saved tactic? Import a .pitchplay file</button>
             <div className="welcome-assurances"><span><Icon name="check" size={15}/> Works on mobile</span><span><Icon name="check" size={15}/> No setup required</span><span><Icon name="check" size={15}/> Free to try</span></div>
           </section>
           <div className="welcome-art">
@@ -235,7 +235,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
         </div>
       ) : (
         <>
-          <div className="collection-title"><div><span>YOUR PLAYBOOK</span><h2>All tactics <small>{boards.length}</small></h2><p>Pick a board to keep building.</p></div><button type="button" className="btn primary" onClick={() => setCreating(true)}><Icon name="plus" size={17}/> New tactic</button></div>
+          <div className="collection-title"><div><span>YOUR PLAYBOOK</span><h2>All tactics <small>{boards.length}</small></h2><p>Pick a board to keep building.</p></div><div className="collection-actions"><button type="button" className="btn" onClick={() => pickProjectFile(setImportFile)}><Icon name="file" size={17}/> Import file</button><button type="button" className="btn primary" onClick={() => setCreating(true)}><Icon name="plus" size={17}/> New tactic</button></div></div>
           <nav className="community-playbook-scope" aria-label="Playbook filter">
             {([['all','All tactics'],['mine','Mine'],['shared','Shared with me']] as const).map(([value,label])=>
               <button key={value} type="button" aria-pressed={playbookFilter===value} onClick={()=>setPlaybookFilter(value)}>{label}{value==='shared'&&<small>{boards.filter(b=>getBoardAccess(b.id)!=='owner').length}</small>}</button>)}

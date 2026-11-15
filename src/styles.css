@@ -2497,3 +2497,53 @@ body{background:#f7faf5}
  .collab-share-links{align-items:flex-start;gap:4px}
  .collab-share-links>a.collab-copy{padding:11px 2px}
 }
+
+/* Unified PitchPlay identity and simpler account-first header. */
+.brand-mark{display:block;width:42px;height:42px;flex:none;border-radius:13px;box-shadow:0 8px 19px #143e2b26}
+.brand-lockup{gap:11px}
+.auth-actions{display:flex;align-items:center;gap:7px;flex:none}
+.library .lib-actions .auth-actions .btn,.community-top .auth-actions .btn{min-height:43px;height:43px;padding:0 16px;border-radius:11px;font-size:13px;font-weight:800;white-space:nowrap}
+.library .lib-actions .auth-login,.community-top .auth-login{background:#fff;border:1px solid #ccddca;color:#21503a}
+.library .lib-actions .auth-login:hover,.community-top .auth-login:hover{background:#eaf5e8}
+.profile-trigger{display:flex;align-items:center;gap:9px;min-height:43px;border:1px solid #cadfc7;background:#fff;padding:4px 11px 4px 4px;border-radius:100px;color:#20462f;font-weight:790;cursor:pointer;white-space:nowrap;flex:none}
+.profile-trigger:hover{background:#eff8ed;border-color:#a6d0ad}
+.profile-avatar{width:34px;height:34px;display:grid;place-items:center;flex:none;border-radius:50%;background:linear-gradient(155deg,#2c8650,#15402b);color:#f7ffe9;border:2px solid #d1ecb6;font-size:15px;font-weight:900;text-transform:uppercase}
+.profile-label{font-size:13px;margin-right:3px}
+.account-round{border-radius:50%;background:linear-gradient(155deg,#2c8650,#15402b);color:#f7ffe9;font-weight:850;font-size:18px}
+.collection-actions{display:flex;align-items:center;gap:9px;flex:none}
+.collection-actions .btn{min-height:44px;display:inline-flex;align-items:center;gap:7px}
+.welcome-import{margin-top:15px;padding:4px 0;display:inline-flex;align-items:center;gap:7px;border:0;background:none;color:#2d794b;font-weight:740;font-size:12px;cursor:pointer;text-align:left}
+.welcome-import:hover{text-decoration:underline}
+.community-brand{gap:6px}
+.community-brand .brand-mark{width:37px;height:37px;margin-right:5px;border-radius:11px}
+.community-brand>span{color:#3e9963}
+.community-top .auth-actions{margin-left:8px}
+.community-top .profile-trigger{margin-left:8px}
+.community-top nav .auth-actions button{padding:0 14px}
+.community-top nav .auth-actions .auth-login{border:1px solid #ccddca;background:#fff;color:#21503a}
+.community-top nav .auth-actions .auth-signup{background:#17402b;color:#f7ffef;border:1px solid #17402b}
+@media(max-width:640px){
+ .brand-mark{width:35px;height:35px;border-radius:11px}
+ .library .lib-actions .auth-actions{gap:5px}
+ .library .lib-actions .auth-actions .btn{min-width:0;height:40px;min-height:40px;padding:0 9px;font-size:11px}
+ .profile-trigger{padding:3px;min-height:41px}
+ .profile-avatar{height:34px;width:34px}
+ .profile-label{display:none}
+ .community-brand .brand-mark{width:31px;height:31px;margin-right:2px}
+ .community-top .community-active{display:none}
+ .community-top nav .community-nav-link{padding:8px 5px}
+ .community-top .auth-actions{margin-left:0;gap:4px}
+ .community-top nav .auth-actions .btn{min-height:39px;height:39px;padding:0 9px;font-size:11px}
+ .community-top .profile-trigger{margin-left:0}
+ .collection-actions{gap:5px}
+ .collection-actions .btn{padding:8px 9px;font-size:11px}
+}
+@media(max-width:380px){
+ .library .wordmark{font-size:17px}
+ .library .lib-actions .nav-discover{min-width:37px;padding:6px}
+ .library .lib-actions .auth-actions .btn{padding:0 7px;font-size:10px}
+ .community-brand{font-size:17px}
+ .community-top nav .community-nav-link{font-size:10px;padding:8px 3px}
+ .community-top nav .auth-actions .btn{padding:0 7px;font-size:10px}
+ .collection-actions .btn{padding:7px 6px}
+}

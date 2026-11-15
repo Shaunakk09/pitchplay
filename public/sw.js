@@ -1,6 +1,6 @@
 // PitchPlay PWA: fetch the latest app shell first while retaining offline editing.
 // Private tactics live in IndexedDB; Supabase requests bypass this cache.
-const CACHE = 'pitchplay-shell-v2';
+const CACHE = 'pitchplay-shell-v3';
 const CORE = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.png'];
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));

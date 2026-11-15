@@ -2,11 +2,12 @@ import { useState, type FormEvent } from 'react';
 import { Icon } from './kit';
 import { cloudConfigured, type CloudUser, signIn, signOut, signUp, resetPassword, updatePassword, type CloudState } from '../store/cloud';
 
-export function AccountDialog({ user, status, recovery, onClose, onSync, onImportGuest }: {
+export function AccountDialog({ user, status, recovery, initialMode = 'login', onClose, onSync, onImportGuest }: {
   user: CloudUser | null; status: CloudState; recovery: boolean; onClose: () => void;
+  initialMode?: 'login' | 'signup';
   onSync: () => Promise<void>; onImportGuest: () => Promise<void>;
 }) {
-  const [mode, setMode] = useState<'login' | 'signup' | 'reset' | 'password'>(recovery ? 'password' : 'login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset' | 'password'>(recovery ? 'password' : initialMode);
   const [email, setEmail] = useState(''), [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [error, setError] = useState('');
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -26,10 +27,10 @@ export function AccountDialog({ user, status, recovery, onClose, onSync, onImpor
       <div className="account-head"><div><span className="account-kicker">YOUR PLAYBOOK</span><h2>{user && !recovery ? 'Your account' : mode==='signup' ? 'Create your account' : mode==='reset' ? 'Reset password' : mode==='password' ? 'Set a new password' : 'Welcome back'}</h2><p>{user && !recovery ? 'Your private tactics, across your devices.' : 'Your ideas are worth saving.'}</p></div><button className="iconbtn" onClick={onClose} aria-label="Close account dialog">×</button></div>
       {!cloudConfigured ? <div className="account-body account-coming"><span className="cloud-symbol">☁</span><h3>Keep building, even offline.</h3><p>Tactics are currently saved on this device. Cross-device accounts will activate once PitchPlay has its own Supabase project.</p><div className="account-saving-tip"><Icon name="check" size={17}/> Export a .pitchplay file to keep a backup.</div><button type="button" className="btn primary wide" onClick={onClose}>Continue as guest</button></div>
       : user && !recovery ? <div className="account-body">
-          <div className="account-identity"><span className="account-round">●</span><div><strong>{user.email || 'Signed in'}</strong><p>{status === 'saved' ? 'Your tactics are backed up' : status === 'offline' ? 'Saved locally · cloud unavailable' : status === 'conflict' ? 'Conflict detected · review copies' : 'Cloud synchronization active'}</p></div></div>
+          <div className="account-identity"><span className="account-round" aria-hidden="true">{user.email?.charAt(0).toUpperCase() || 'P'}</span><div><strong>{user.email || 'Signed in'}</strong><p>{status === 'saved' ? 'Your tactics are backed up' : status === 'offline' ? 'Saved locally · cloud unavailable' : status === 'conflict' ? 'Conflict detected · review copies' : 'Cloud synchronization active'}</p></div></div>
           <button className="btn wide" disabled={busy} onClick={() => void action(onSync)}>Sync your tactics now</button>
           <button className="btn wide" disabled={busy} onClick={() => void action(onImportGuest)}>Copy guest tactics into this account</button>
-          <button className="btn wide" disabled={busy} onClick={() => void action(signOut)}>Sign out</button>
+          <button className="btn wide" disabled={busy} onClick={() => void action(async()=>{await signOut();onClose();})}>Sign out</button>
           <p className="account-small">Guest boards are never uploaded automatically. Your signed-in library stays separate from other users on this device.</p>
         </div>
       : <form className="account-body account-form" onSubmit={e => void submit(e)}>

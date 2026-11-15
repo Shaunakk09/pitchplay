@@ -1,15 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Board } from '../domain/types';
 import { PhaseThumb } from './PhaseRail';
 import { Icon } from './kit';
+import { BrandMark } from './BrandMark';
 import * as ops from '../domain/ops';
 import { putBoard } from '../store/db';
 import { currentUser } from '../store/cloud';
 import { favoriteBoard, myFavoriteIds, publicTactics, type PublicTactic, listInvitations, acceptInvitation, type BoardInvite } from '../store/community';
 
 const options=['All formats','5v5','7v7','9v9','11v11'];
-export function DiscoverPage({ onBack,onOpen,onFork,onSignIn }: {
-  onBack:()=>void; onOpen:(id:string,b:Board)=>void; onFork:(b:Board)=>Promise<void>;onSignIn:()=>void
+export function DiscoverPage({ onBack,onOpen,onFork,onSignIn,accountControl }: {
+  onBack:()=>void; onOpen:(id:string,b:Board)=>void; onFork:(b:Board)=>Promise<void>;onSignIn:()=>void;accountControl?:ReactNode
 }) {
   const [items,setItems]=useState<PublicTactic[]>([]);
   const [favorites,setFavorites]=useState<string[]>([]);
@@ -52,8 +53,8 @@ export function DiscoverPage({ onBack,onOpen,onFork,onSignIn }: {
   }
   return <div className="community-screen">
     <header className="community-top">
-      <button className="community-brand" type="button" onClick={onBack}><span className="community-logo">P</span> pitch<span>play.</span></button>
-      <nav aria-label="Discover navigation"><button type="button" className="community-nav-link" onClick={onBack}>My playbook</button><span className="community-active">Discover</span></nav>
+      <button className="community-brand" type="button" onClick={onBack}><BrandMark/> pitch<span>play.</span></button>
+      <nav aria-label="Discover navigation"><button type="button" className="community-nav-link" onClick={onBack}>My playbook</button><span className="community-active">Discover</span>{accountControl}</nav>
     </header>
     <section className="community-hero">
       <div><span className="community-kicker">THE TACTICAL EXCHANGE</span>
