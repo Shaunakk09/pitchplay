@@ -64,9 +64,13 @@ export const currentUser = () => user;
 export const onCloudStatus = (callback: (state: CloudState) => void) => { onCloudState = callback; };
 const status = (s: CloudState) => onCloudState?.(s);
 const versionsKey = (id: string) => 'pitchplay_cloud_versions:' + id;
+const permissionsKey = (id: string) => 'pitchplay_cloud_permissions:' + id;
 function saveVersions() {
   if (!user) return;
-  try { localStorage.setItem(versionsKey(user.id), JSON.stringify([...cloudVersions.entries()])); } catch { /* offline work survives */ }
+  try {
+    localStorage.setItem(versionsKey(user.id), JSON.stringify([...cloudVersions.entries()]));
+    localStorage.setItem(permissionsKey(user.id), JSON.stringify([...boardPermissions.entries()]));
+  } catch { /* offline work survives */ }
 }
 function readVersions() {
   cloudVersions.clear();
@@ -74,6 +78,15 @@ function readVersions() {
     const v: unknown = JSON.parse(localStorage.getItem(versionsKey(user!.id)) || '[]');
     if (Array.isArray(v)) for (const item of v) if (Array.isArray(item) && typeof item[0] === 'string' && item[1]?.remote > 0) cloudVersions.set(item[0], item[1]);
   } catch { /* no cloud cursor */ }
+  try {
+    const v:unknown=JSON.parse(localStorage.getItem(permissionsKey(user!.id))||'[]');
+    if(Array.isArray(v))for(const item of v) {
+      if(Array.isArray(item)&&typeof item[0]==='string'&&
+        ['owner','editor','viewer','revoked'].includes(item[1])) {
+        boardPermissions.set(item[0],item[1] as BoardAccess);
+      }
+    }
+  } catch { /* no cached permissions */ }
 }
 async function sdk() {
   if (!cloudConfigured) throw Error('Cloud accounts are not configured yet. Guest mode still works.');
@@ -209,5 +222,5 @@ export async function cloudDelete(boardId: string) {
   const { data, error } = await (await sdk()).from('pitchplay_tactics').delete().eq('id', boardId).eq('revision', rev.remote).select('id');
   if (error) fail(error);
   if (!data?.length) throw Error('Cloud copy changed on another device. Sync before deleting.');
-  cloudVersions.delete(boardId); saveVersions();
+  cloudVersions.delete(boardId); boardPermissions.delete(boardId); saveVersions();
 }
