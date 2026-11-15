@@ -15,6 +15,7 @@ import { PhaseRail, Playback } from './PhaseRail';
 import { FormatDialog, FormationDialog, ObjectsDialog, RosterDialog, SettingsDialog, ShortcutsDialog, VersionsDialog } from './Sheets';
 import { Stage } from './Stage';
 import { CollaborationDialog } from './Collaboration';
+import { fetchCloudBoard } from '../store/community';
 import { type BoardAccess } from '../store/cloud';
 import { LINE_TYPES, devicePref, isLineTool, setDevicePref, useEditor, type Editor, type Tool } from './useEditor';
 
@@ -30,7 +31,7 @@ function useMedia(query: string): boolean {
 }
 
 export function EditorScreen(props: { boardId: string; initial?: Board; cloudAccess?: BoardAccess; onExit: (sessionBoard?: Board) => void; onOpen: (id: string, initial?: Board) => void }) {
-  const [state, setState] = useState<{ loaded: LoadResult; available: boolean } | 'missing' | null>(null);
+  const [state, setState] = useState<{ loaded: LoadResult; available: boolean; access: BoardAccess } | 'missing' | null>(null);
   useEffect(() => {
     let live = true;
     setState(null);
@@ -38,8 +39,14 @@ export function EditorScreen(props: { boardId: string; initial?: Board; cloudAcc
       const available = await storageAvailable();
       // The stored record wins; the in-memory copy is only for browsers without storage.
       const stored = available ? await loadBoard(props.boardId).catch(() => null) : null;
-      const loaded = stored ?? (props.initial ? { board: props.initial, restoredFrom: null, damaged: null } : null);
-      if (live) setState(loaded ? { loaded, available } : 'missing');
+      // Shared and public links work even when this device has never opened the board.
+      const remote = !stored && !props.initial
+        ? await fetchCloudBoard(props.boardId).catch((e) => { console.warn('Board access unavailable',e); return null; })
+        : null;
+      const loaded = stored ?? (props.initial ? { board: props.initial, restoredFrom: null, damaged: null }
+        : remote ? { board: remote.board, restoredFrom: null, damaged: null } : null);
+      const access = remote?.access ?? props.cloudAccess ?? 'owner';
+      if (live) setState(loaded ? { loaded, available, access } : 'missing');
     })();
     return () => {
       live = false;
@@ -56,7 +63,7 @@ export function EditorScreen(props: { boardId: string; initial?: Board; cloudAcc
       </div>
     );
   }
-  return <EditorInner key={props.boardId} loaded={state.loaded} available={state.available} cloudAccess={props.cloudAccess ?? 'owner'} onExit={props.onExit} onOpen={props.onOpen} />;
+  return <EditorInner key={props.boardId} loaded={state.loaded} available={state.available} cloudAccess={state.access} onExit={props.onExit} onOpen={props.onOpen} />;
 }
 
 const TOOLS: { tool: Tool; label: string; key: string }[] = [
@@ -76,7 +83,7 @@ const KEY_TOOL: Record<string, Tool> = Object.fromEntries(TOOLS.map((t) => [t.ke
 const STATUS_LABEL: Record<string, string> = { saved: 'Saved', saving: 'Saving', failed: 'Save failed', session: 'Session only', conflict: 'Not saved', readonly: 'Read-only' };
 
 function EditorInner({ loaded, available, cloudAccess, onExit, onOpen }: { loaded: LoadResult; available: boolean; cloudAccess: BoardAccess; onExit: (sessionBoard?: Board) => void; onOpen: (id: string, initial?: Board) => void }) {
-  const ed = useEditor(loaded, available, cloudAccess === 'viewer');
+  const ed = useEditor(loaded, available, cloudAccess === 'viewer' || cloudAccess === 'revoked');
   const { board, phaseIdx, view, tool, sel } = ed;
   const compact = useMedia('(max-width: 1024px)');
   const spaceHeld = useRef(false);
