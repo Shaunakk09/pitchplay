@@ -121,3 +121,19 @@ export async function myFavoriteIds():Promise<string[]> {
   return result.map((row:any)=>row.board_id);
 }
 export const canEdit = (access:BoardAccess)=>access==='owner'||access==='editor';
+
+/** Open an authorized board by its UUID, including a direct shared/public URL. */
+export async function fetchCloudBoard(boardId: string): Promise<{board:Board;access:BoardAccess}|null> {
+  if (!cloudConfigured || !/^[0-9a-f-]{36}$/i.test(boardId)) return null;
+  const c=await cloudClient();
+  const {data,error}=await c.from('pitchplay_tactics').select('id,user_id,board').eq('id',boardId).maybeSingle();
+  if(error)throw new Error(error.message || 'Could not open tactic');
+  if(!data || !isValidStoredBoard(data.board))return null;
+  const account=currentUser();
+  if(!account)return {board:data.board,access:'viewer'};
+  if(account.id===data.user_id)return {board:data.board,access:'owner'};
+  const {data:member,error:memberError}=await c.from('pitchplay_board_members')
+    .select('role').eq('board_id',boardId).eq('user_id',account.id).maybeSingle();
+  if(memberError)throw new Error(memberError.message || 'Unable to verify board rights');
+  return {board:data.board,access:member?.role==='editor'?'editor':'viewer'};
+}
