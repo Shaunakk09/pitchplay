@@ -49,7 +49,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
     const ok = await storageAvailable();
     setAvailable(ok);
     const list = ok ? await listBoards().catch(() => []) : [...props.sessionBoards.values()];
-    setBoards(list.filter((b) => b.id !== pendingDelete.current?.id));
+    setBoards(list.filter((b) => b.id !== pendingDelete.current?.id && getBoardAccess(b.id) !== 'revoked'));
     setNearlyFull(await storageNearlyFull());
   }, [props.sessionBoards]);
   useEffect(() => void refresh(), [refresh]);
