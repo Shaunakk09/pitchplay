@@ -5,6 +5,9 @@ import { AccountDialog } from './ui/AccountDialog';
 import { cloudConfigured, currentUser, onCloudStatus, startCloud, syncCloudLibrary, type CloudUser, type CloudState } from './store/cloud';
 import { listBoards, putBoard, setAccountStorage } from './store/db';
 import { Library } from './ui/Library';
+import { DiscoverPage } from './ui/Discover';
+import { getBoardAccess, type BoardAccess } from './store/cloud';
+import * as ops from './domain/ops';
 
 // Plain "#board-<id>" hashes: the only form a claude.ai hosted page passes through.
 // The older "#/b/<id>" form still opens.
@@ -12,6 +15,8 @@ const boardIdFromHash = () => /^#(?:board-|\/b\/)([\w-]+)$/.exec(location.hash)?
 
 export function App() {
   const [boardId, setBoardId] = useState<string | null>(boardIdFromHash);
+  const [discover, setDiscover] = useState(location.hash === '#discover');
+  const [openedAccess, setOpenedAccess] = useState<BoardAccess>('owner');
   const [account, setAccount] = useState<CloudUser | null>(currentUser());
   const [accountOpen, setAccountOpen] = useState(false);
   const [recover, setRecover] = useState(false);
@@ -49,14 +54,22 @@ export function App() {
   // Boards that live only in this tab when the browser offers no storage (PST-007).
   const sessionBoards = useRef(new Map<string, Board>());
   useEffect(() => {
-    const on = () => setBoardId(boardIdFromHash());
+    const on = () => { setBoardId(boardIdFromHash()); setDiscover(location.hash === '#discover'); };
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
-  const open = (id: string, initial?: Board) => {
+  const open = (id: string, initial?: Board, access: BoardAccess = 'owner') => {
     if (initial) sessionBoards.current.set(id, initial);
+    setOpenedAccess(access);
     location.hash = `#board-${id}`;
   };
+  const forkPublic = async (original: Board) => {
+    const copy = ops.copyBoard(original, original.title + ' (remix)');
+    await putBoard(copy,null);
+    open(copy.id);
+  };
+  const backToLibrary = () => { location.hash = '#boards'; };
+  const showDiscover = () => { location.hash = '#discover'; };
   if (authLoading && cloudConfigured) return <div className="center-note">Loading your playbook…</div>;
   if (boardId) {
     return (
@@ -64,6 +77,7 @@ export function App() {
       <EditorScreen
         key={accountScope}
         boardId={boardId}
+        cloudAccess={openedAccess}
         initial={sessionBoards.current.get(boardId)}
         onOpen={open}
         onExit={(b) => {
@@ -75,5 +89,13 @@ export function App() {
       </>
     );
   }
-  return <><Library key={accountScope} sessionBoards={sessionBoards.current} onOpen={open} accountControl={accountButton} cloudReady={cloudConfigured}/>{accountPanel}</>;
+  if (discover) return <><DiscoverPage key={accountScope} onBack={backToLibrary}
+    onOpen={(id,board) => open(id,board,'viewer')}
+    onFork={forkPublic} onSignIn={() => {setRecover(false);setAccountOpen(true);}} />{accountPanel}</>;
+  return <><Library key={accountScope} sessionBoards={sessionBoards.current}
+    onOpen={open} onDiscover={showDiscover} accountControl={accountButton}
+    cloudReady={cloudConfigured} onInvitationsAccepted={async () => {
+      await syncCloudLibrary(listBoards,async b=>putBoard(b,null));
+      setAccountScope((account?.id||'guest')+'-shared-'+Date.now());
+    }}/>{accountPanel}</>;
 }
