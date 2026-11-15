@@ -48,6 +48,13 @@ const boardPermissions = new Map<string, BoardAccess>();
 export const getBoardAccess = (id: string): BoardAccess =>
   boardPermissions.get(id) ?? (cloudVersions.has(id) ? 'revoked' : 'owner');
 export const cloudClient = sdk;
+export function rememberCloudBoard(id:string,access:BoardAccess,remoteRevision:number,localRevision:number) {
+  boardPermissions.set(id,access);
+  if (user && (access==='owner'||access==='editor')) {
+    cloudVersions.set(id,{remote:remoteRevision,local:localRevision});
+    saveVersions();
+  }
+}
 const pending = new Map<string, ReturnType<typeof setTimeout>>();
 const inFlight = new Set<string>();
 let accountEpoch = 0;
