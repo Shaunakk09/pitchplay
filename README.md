@@ -6,7 +6,7 @@ Interactive football tactics board for coaches, players and analysts.
 - **Framework:** React 18, TypeScript, Vite.
 - **Usage:** Create formations, draw player runs and passes, build multi-phase sequences, animate plays, and export tactics.
 - **Guest saving:** IndexedDB, stored on the current device.
-- **Account saving:** Supabase sign-up/sign-in and private cloud sync are scaffolded but **not enabled** until a dedicated PitchPlay Supabase project is configured. Never reuse XChange's database.
+- **Account saving:** Supabase sign-up/sign-in and private cloud sync are configured for PitchPlay's dedicated Supabase project. Confirmation-email redirects must be allowlisted before external signup is considered verified. Never reuse XChange's database.
 
 ## Development
 
@@ -28,11 +28,11 @@ Do not commit secrets or service-role keys. See `public/cloud-config.js` and `su
 
 PitchPlay must use its **own Supabase organization and project**, completely separate from XChange. Do not create the project inside the `xchange-prod` organization or reuse XChange keys, auth users or database.
 
-1. Create a Supabase organization named **PitchPlay** from [the Supabase dashboard](https://supabase.com/dashboard/new) and choose its plan. Organizations have independent billing/subscriptions.
-2. Create a project named **PitchPlay** in that organization, after reviewing the plan and projected cost.
-3. Apply [the private tactics migration](supabase/migrations/20261114_000001_create_tactics.sql) to the **PitchPlay project only**. Its table uses RLS and requires `auth.uid() = user_id` for SELECT, INSERT, UPDATE, and DELETE.
-4. In **Authentication → URL Configuration**, set Site URL to the **new GitHub-connected production domain**, not the old `pitchplay-tactical-board.vercel.app` site. Include the exact same production URL in allowed Redirect URLs, plus `http://localhost:5183/**` when working locally. Enable email confirmation and configure an email sender before launch.
-5. In the **Vercel project linked to `Shaunakk09/pitchplay`**, add the public environment variables in [`.env.example`](.env.example): `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. They are browser-visible by design. Never put the Supabase secret/service-role key in the browser or in GitHub. Alternatively set those same public values in `public/cloud-config.js`.
-6. Redeploy by pushing a commit to **`main`**. Verify email signup and confirmation, login, password reset, per-user cloud storage, cross-device sync, conflicts and offline editing with two separate test users before calling production ready.
+1. **Done:** Dedicated Supabase organization **PitchPlay**, project `lammxpdovmijqfabbcxy` (ap-northeast-2). Independent from XChange.
+2. **Done:** Applied [the private tactics migration](supabase/migrations/20261114_000001_create_tactics.sql) only to this project. The `pitchplay_tactics` table has RLS and `auth.uid() = user_id` policies for SELECT, INSERT, UPDATE, DELETE; the Supabase security advisor returned no lints.
+3. **Done:** The public project URL and public `sb_publishable_` API key are configured in `public/cloud-config.js` and pushed to `main`. The GitHub Vercel deployment check passed.
+4. **Required before email confirmation/password reset work reliably:** In **Authentication → URL Configuration**, set Site URL to the **new GitHub-connected production domain**, not the old `pitchplay-tactical-board.vercel.app` site. Include the exact same production URL in allowed Redirect URLs, plus `http://localhost:5183/**` when working locally. Enable email confirmation and configure an email sender before launch.
+5. **Already configured:** `public/cloud-config.js` provides the public URL and publishable API key. Optional: use Vercel Environment Variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` instead to override it. Never store `sb_secret_` or service-role keys in the browser or repo.
+6. A production deployment was triggered from **`main`** and GitHub reports Vercel success. **Still to verify end-to-end:** email signup and confirmation, login, password reset, per-user cloud storage, cross-device sync, conflicts and offline editing with two separate test users before calling production ready.
 
-**Status:** the account and sync implementation is present, but no live Supabase backend is enabled until the separate organization and project are provisioned and configured. Guest boards continue saving locally.
+**Status:** Backend and frontend configuration are connected. Email redirect allowlisting and user-journey verification remain. Guest boards continue saving locally.
