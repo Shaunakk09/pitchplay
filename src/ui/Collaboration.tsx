@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import type { Board } from '../domain/types';
 import type { BoardAccess } from '../store/cloud';
 import { currentUser } from '../store/cloud';
@@ -17,6 +18,7 @@ export function CollaborationDialog({board,access,onClose,onRestore}:{
  const [description,setDescription]=useState('');
  const [tags,setTags]=useState('');
  const [email,setEmail]=useState('');
+ const [lastInvitedEmail,setLastInvitedEmail]=useState('');
  const [role,setRole]=useState<'viewer'|'editor'>('editor');
  const [error,setError]=useState('');
  const [note,setNote]=useState('');
@@ -37,17 +39,22 @@ export function CollaborationDialog({board,access,onClose,onRestore}:{
   finally{setLoading(false);}
  }
  useEffect(()=>{void refresh();},[board.id]);
- async function task(action:()=>Promise<void>,success:string){
+ useEffect(()=>{
+   const closeOnEscape=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();};
+   document.addEventListener('keydown',closeOnEscape);
+   return()=>document.removeEventListener('keydown',closeOnEscape);
+ },[onClose]);
+ async function task(action:()=>Promise<void>,success:string):Promise<boolean>{
    setBusy(true);setError('');setNote('');
-   try{await action();setNote(success);await refresh();}
-   catch(e){setError(e instanceof Error?e.message:'The operation failed');}
+   try{await action();setNote(success);await refresh();return true;}
+   catch(e){setError(e instanceof Error?e.message:'The operation failed');return false;}
    finally{setBusy(false);}
  }
  async function invite(e:FormEvent){
    e.preventDefault();
    const target=email.trim().toLowerCase();
-   await task(()=>inviteToBoard(board.id,target,role),'Invitation created. Copy the invite link and send it to your teammate.');
-   setEmail('');
+   const ok=await task(()=>inviteToBoard(board.id,target,role),'Invitation created. Send the invitation email or share your playbook link.');
+   if(ok){setEmail('');setLastInvitedEmail(target);}
  }
  async function copyLink(){
    try{
@@ -55,9 +62,9 @@ export function CollaborationDialog({board,access,onClose,onRestore}:{
      setNote('Playbook link copied. The recipient must sign in with the exact invited email and accept from Invitations.');
    }catch{setError('Clipboard unavailable; share your PitchPlay website URL with the invited teammate.');}
  }
- return <div className="collab-backdrop" onMouseDown={onClose}>
+ return createPortal(<div className="collab-backdrop" onMouseDown={onClose}>
    <section className="collab-dialog" role="dialog" aria-modal="true" aria-label="Board sharing and change history" onMouseDown={e=>e.stopPropagation()}>
-     <header className="collab-head"><div><span className="community-kicker">COLLABORATIVE PLAYBOOK</span><h2>Share &amp; history</h2><p>{board.title}</p></div><button className="collab-close" type="button" aria-label="Close" onClick={onClose}>×</button></header>
+     <header className="collab-head"><div><span className="community-kicker">COLLABORATIVE PLAYBOOK</span><h2>Share &amp; history</h2><p>{board.title}</p></div><button className="collab-close" type="button" aria-label="Close" autoFocus onClick={onClose}>×</button></header>
      <nav className="collab-tabs" aria-label="Board collaboration tabs">
        <button aria-current={tab==='share'?'page':undefined} onClick={()=>setTab('share')}>Share &amp; access</button>
        <button aria-current={tab==='history'?'page':undefined} onClick={()=>setTab('history')}>Change history</button>
@@ -69,7 +76,11 @@ export function CollaborationDialog({board,access,onClose,onRestore}:{
        :tab==='share'?<div className="collab-stack">
          <section className="collab-card"><div className="collab-section-heading"><div><h3>Visibility</h3><p>{settings?.is_public?'Anyone can view this tactic in Discover.':'Only you and invited members can access this board.'}</p></div>
            <span className={settings?.is_public?'collab-public':'collab-private'}>{settings?.is_public?'● Public':'○ Private'}</span></div>
-           {owner&&<><label className="collab-label">About this tactic
+           {settings?.is_public && <button type="button" className="collab-copy" onClick={async()=>{
+           try{await navigator.clipboard.writeText(location.origin+location.pathname+'#board-'+board.id);setNote('Public tactic link copied.');}
+           catch{setError('Unable to copy link on this device.');}
+         }}>Copy public viewing link</button>}
+         {owner&&<><label className="collab-label">About this tactic
              <textarea rows={3} maxLength={500} placeholder="What is the objective of this tactic?" value={description} onChange={e=>setDescription(e.target.value)}/>
            </label><label className="collab-label">Tags (up to five, comma-separated)
              <input maxLength={120} value={tags} onChange={e=>setTags(e.target.value)} placeholder="pressing, build-up, counterattack" />
@@ -82,7 +93,10 @@ export function CollaborationDialog({board,access,onClose,onRestore}:{
              <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="teammate@example.com" aria-label="Teammate email"/>
              <select aria-label="Invitation permissions" value={role} onChange={e=>setRole(e.target.value as 'viewer'|'editor')}><option value="editor">Can edit</option><option value="viewer">View only</option></select>
              <button className="community-primary" disabled={busy||!email.trim()}>Invite</button>
-           </form><button type="button" className="collab-copy" onClick={()=>void copyLink()}>Copy playbook invitation link</button>
+           </form><div className="collab-share-links">
+             <button type="button" className="collab-copy" onClick={()=>void copyLink()}>Copy playbook invitation link</button>
+             {lastInvitedEmail && <a className="collab-copy" href={`mailto:${encodeURIComponent(lastInvitedEmail)}?subject=${encodeURIComponent('Join my PitchPlay tactical board')}&body=${encodeURIComponent('I invited you to collaborate on a PitchPlay board. Sign in using this email, then accept the invitation in My Playbook: '+location.origin+location.pathname+'#boards')}`}>Send invitation by email</a>}
+           </div>
          </section>}
          <section className="collab-card"><h3>Board permissions</h3>
            <p className="collab-muted">{owner?'You are the owner. Editors can change tactics but cannot publish, change permissions or transfer ownership.':'Your access: '+(access==='editor'?'Can edit':'View only')}</p>
@@ -107,5 +121,5 @@ export function CollaborationDialog({board,access,onClose,onRestore}:{
      </div>
      <footer className="collab-footer"><span>{access==='owner'?'Owner':access==='editor'?'Editor':'Viewer'} permissions</span><button type="button" className="community-primary" onClick={onClose}>Done</button></footer>
    </section>
- </div>;
+ </div>,document.body);
 }
