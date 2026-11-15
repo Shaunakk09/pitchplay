@@ -12,6 +12,8 @@ import { ImportDialog, pickProjectFile } from './ImportDialog';
 import { Confirm, Icon, Menu, Modal, Segmented, Select, Swatches, TextField, download, safeName, type MenuState } from './kit';
 import { PhaseThumb } from './PhaseRail';
 import { devicePref, setDevicePref } from './useEditor';
+import { PendingInvitations } from './Discover';
+import { getBoardAccess, type BoardAccess } from '../store/cloud';
 import { InstallApp } from './InstallApp';
 
 const ago = (iso: string) => {
@@ -22,7 +24,7 @@ const ago = (iso: string) => {
   return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id: string, initial?: Board) => void; accountControl?: ReactNode; cloudReady?: boolean }) {
+export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id: string, initial?: Board, access?: BoardAccess) => void; onDiscover?: () => void; onInvitationsAccepted?: () => Promise<void>; accountControl?: ReactNode; cloudReady?: boolean }) {
   const [boards, setBoards] = useState<Board[] | null>(null);
   const [available, setAvailable] = useState(true);
   const [nearlyFull, setNearlyFull] = useState(false);
@@ -121,16 +123,17 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
   const shown = (boards ?? []).filter((b) => b.title.toLowerCase().includes(query.trim().toLowerCase())); // BRD-003
   const openMenu = (b: Board, el: HTMLElement) => {
     const r = el.getBoundingClientRect();
+    const access = getBoardAccess(b.id);
     setMenu({
       x: r.right - 200,
       y: r.bottom + 4,
       title: b.title,
       items: [
-        { label: 'Open', run: () => props.onOpen(b.id, available ? undefined : b) },
-        { label: 'Rename', run: () => setRenaming(b) },
-        { label: 'Duplicate', run: () => void duplicate(b) },
+        { label: 'Open', run: () => props.onOpen(b.id, available ? undefined : b, access) },
+        ...(access !== 'viewer' ? [{ label: 'Rename', run: () => setRenaming(b) }] : []),
+        { label: 'Duplicate as my board', run: () => void duplicate(b) },
         { label: 'Export project file', run: () => download(projectBlob(b), `${safeName(b.title)}.pitchplay`) },
-        { label: 'Delete', danger: true, run: () => setDeleting(b) },
+        ...(access === 'owner' ? [{ label: 'Delete', danger: true, run: () => setDeleting(b) }] : []),
       ],
     });
   };
@@ -155,6 +158,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
       <header className="lib-head">
         <div className="brand-lockup"><span className="brand-symbol" aria-hidden="true">P</span><div><h1 className="wordmark">pitch<span>play.</span></h1><small>TACTICAL STUDIO</small></div></div>
         <nav className="lib-actions" aria-label="Workspace actions">
+          <button type="button" className="btn nav-discover" onClick={props.onDiscover}><Icon name="search" size={18}/><span>Discover</span></button>
           <button type="button" className="btn hide-narrow" onClick={() => void openExample()}>Explore example</button>
           <button type="button" className="btn nav-file" onClick={() => pickProjectFile(setImportFile)}><Icon name="file" size={18}/><span>Open file</span></button>
           <button type="button" className="btn primary nav-create" onClick={() => setCreating(true)}><Icon name="plus" size={18}/><span>New tactic</span></button>
@@ -163,6 +167,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
       </header>
 
       <InstallApp />
+      {props.onInvitationsAccepted && <PendingInvitations onAccepted={async()=>{await props.onInvitationsAccepted?.(); await refresh();}} />}
 
       {!available && (
         <div className="banner" role="alert">
@@ -237,9 +242,9 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
             <ul className="board-list">
               {shown.map((b) => (
                 <li key={b.id} className={`board-card ${highlight === b.id ? 'fresh' : ''}`}>
-                  <button type="button" className="board-open" onClick={() => props.onOpen(b.id, available ? undefined : b)} aria-label={`Open ${b.title}, ${b.format}, ${b.phases.length} ${b.phases.length === 1 ? 'phase' : 'phases'}`}>
+                  <button type="button" className="board-open" onClick={() => props.onOpen(b.id, available ? undefined : b, getBoardAccess(b.id))} aria-label={`Open ${b.title}, ${b.format}, ${b.phases.length} ${b.phases.length === 1 ? 'phase' : 'phases'}`}>
                     <PhaseThumb board={b} index={0} w={264} h={170} />
-                    <span className="board-title">{b.title}</span>
+                    <span className="board-title">{b.title} {getBoardAccess(b.id)!=='owner'&&<small className="community-role-pill">{getBoardAccess(b.id)==='editor'?'Shared · edit':'Shared · view'}</small>}</span>
                     <span className="board-meta">
                       {b.format} · {b.phases.length} {b.phases.length === 1 ? 'phase' : 'phases'} · {ago(b.updatedAt)}
                     </span>
