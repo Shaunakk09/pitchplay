@@ -51,8 +51,7 @@ export async function publishBoard(boardId:string, published:boolean, descriptio
   const c=await cloudClient();
   const data=check(await c.from('pitchplay_tactics').update({
     is_public: published, description: description.trim().slice(0,500),
-    tags: tags.map(t=>t.trim().toLowerCase()).filter(Boolean).slice(0,5),
-    published_at: published ? new Date().toISOString() : null
+    tags: tags.map(t=>t.trim().toLowerCase()).filter(Boolean).slice(0,5)
   }).eq('id',boardId).eq('user_id',account.id).select('id,is_public').maybeSingle());
   if(!data) throw Error('Only the owner can publish or unpublish this board');
   return data;
