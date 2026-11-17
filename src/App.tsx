@@ -112,7 +112,7 @@ export function App() {
       </>
     );
   }
-  if (analytics) return <><AnalyticsPage onBack={backToLibrary} onSignIn={()=>openAccount()}/>{accountPanel}</>;
+  if (analytics) return <><AnalyticsPage key={account?.id || 'guest'} onBack={backToLibrary} onSignIn={()=>openAccount()}/>{accountPanel}</>;
   if (discover) return <><DiscoverPage key={accountScope} onBack={backToLibrary}
     onOpen={(id,board) => open(id,board,'viewer')}
     onFork={forkPublic} onSignIn={() => openAccount()} accountControl={accountButton}/>{accountPanel}</>;
