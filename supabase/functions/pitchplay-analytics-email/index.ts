@@ -58,7 +58,9 @@ async function sendDailyDigest() {
   const reportResponse=await rest('rpc/pitchplay_admin_analytics',{method:'POST',body:'{}'});
   if(!reportResponse.ok) return json({error:'Could not generate report'},500);
   const report=await reportResponse.json() as {totals:{week:Metrics;month:Metrics;all:Metrics};daily:Daily[]};
-  const sgToday=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Singapore',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const dateParts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Singapore',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  const pick=(part:string)=>dateParts.find(x=>x.type===part)?.value||'';
+  const sgToday=`${pick('year')}-${pick('month')}-${pick('day')}`;
   const yesterday=new Date(Date.parse(`${sgToday}T00:00:00Z`)-86400000).toISOString().slice(0,10);
   const day=report.daily.find(x=>x.day===yesterday);
   if(!day) return json({error:'No daily metrics available'},500);
