@@ -8,6 +8,7 @@ import { lineTypesUsed } from '../render/draw';
 import { Cancelled, animationLength, canShareFiles, exportGif, exportImage, exportStoryboard, exportVideo, exportZip, pickVideoMime, renderPhaseCanvas, shareFile, type AnimOpts, type FrameOpts } from '../export/render';
 import { Modal, Segmented, Select, Switch, download, safeName } from './kit';
 import { devicePref, setDevicePref, type Editor } from './useEditor';
+import { trackEvent } from '../store/analytics';
 
 type Kind = 'image' | 'storyboard' | 'zip' | 'video' | 'gif' | 'project';
 const KINDS: { value: Kind; label: string }[] = [
@@ -147,6 +148,7 @@ export function ExportSheet({ ed }: { ed: Editor }) {
       }
       const secs = (performance.now() - t0) / 1000;
       setResult({ blob, name, seconds: secs });
+      trackEvent('export_completed','editor',kind);
       ed.announce(`Export ready: ${name}`);
       if (!canShareFiles()) void save(blob, name); // EXP-015: Download is always available
     } catch (e) {

@@ -10,6 +10,7 @@ import { DEFAULT_VIEW, type Cam, type ViewState } from '../render/camera';
 import { teamMode, type HitRef } from '../render/draw';
 import { Saver, addVersion, getPref, loadBoard, setPref, type LoadResult, type SaveStatus } from '../store/db';
 import type { MenuState } from './kit';
+import { trackEdit, trackEvent } from '../store/analytics';
 
 export type Tool = 'select' | 'player' | 'run' | 'pass' | 'carry' | 'shot' | 'arrow' | 'zone' | 'text' | 'erase' | 'pan';
 export const LINE_TYPES: LineType[] = ['run', 'pass', 'carry', 'shot', 'arrow'];
@@ -281,6 +282,7 @@ export function useEditor(loaded: LoadResult, available: boolean, viewOnly = fal
       setCursor(phaseStart(tlRef.current, from));
     }
     setPlaying(true);
+    trackEvent('playback_started','editor');
     announce('Playing');
   }, [announce]);
 
@@ -376,6 +378,7 @@ export function useEditor(loaded: LoadResult, available: boolean, viewOnly = fal
       if (undoStack.current.length > UNDO_DEPTH) undoStack.current.shift(); // HIS-003
       redoStack.current = []; // HIS-004
       applyBoard(next);
+      trackEdit(label);
       return true;
     },
     [applyBoard, readOnly, toast],

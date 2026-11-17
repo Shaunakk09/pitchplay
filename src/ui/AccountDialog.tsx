@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Icon } from './kit';
 import { cloudConfigured, type CloudUser, signIn, signOut, signUp, resetPassword, updatePassword, type CloudState } from '../store/cloud';
+import { analyticsEnabled, notifySuccessfulLogin, setAnalyticsEnabled, trackEvent } from '../store/analytics';
 
 export function AccountDialog({ user, status, recovery, initialMode = 'login', onClose, onSync, onImportGuest }: {
   user: CloudUser | null; status: CloudState; recovery: boolean; onClose: () => void;
@@ -14,8 +15,8 @@ export function AccountDialog({ user, status, recovery, initialMode = 'login', o
     e.preventDefault(); if (busy) return;
     setError(''); setMessage(''); setBusy(true);
     try {
-      if (mode === 'login') { await signIn(email.trim(), password); onClose(); }
-      else if (mode === 'signup') { const active = await signUp(email.trim(),password); setMessage(active ? 'Account created. Loading your boards…' : 'Check your email and confirm your account before signing in.'); if (active) onClose(); }
+      if (mode === 'login') { await signIn(email.trim(), password); trackEvent('login_success','account'); notifySuccessfulLogin(); onClose(); }
+      else if (mode === 'signup') { const active = await signUp(email.trim(),password); if(active){trackEvent('signup_completed','account');notifySuccessfulLogin();} setMessage(active ? 'Account created. Loading your boards…' : 'Check your email and confirm your account before signing in.'); if (active) onClose(); }
       else if (mode === 'reset') { await resetPassword(email.trim()); setMessage('If an account exists, a password reset link has been sent.'); }
       else { await updatePassword(password); setMessage('Password updated successfully.'); }
     } catch(e) { setError(e instanceof Error ? e.message : 'Could not connect. Please try again.'); }
@@ -30,7 +31,7 @@ export function AccountDialog({ user, status, recovery, initialMode = 'login', o
           <div className="account-identity"><span className="account-round" aria-hidden="true">{user.email?.charAt(0).toUpperCase() || 'P'}</span><div><strong>{user.email || 'Signed in'}</strong><p>{status === 'saved' ? 'Your tactics are backed up' : status === 'offline' ? 'Saved locally · cloud unavailable' : status === 'conflict' ? 'Conflict detected · review copies' : 'Cloud synchronization active'}</p></div></div>
           <button className="btn wide" disabled={busy} onClick={() => void action(onSync)}>Sync your tactics now</button>
           <button className="btn wide" disabled={busy} onClick={() => void action(onImportGuest)}>Copy guest tactics into this account</button>
-          <button className="btn wide" disabled={busy} onClick={() => void action(async()=>{await signOut();onClose();})}>Sign out</button>
+          <button className="btn wide" disabled={busy} onClick={() => void action(async()=>{trackEvent('logout','account');await signOut();onClose();})}>Sign out</button>
           <p className="account-small">Guest boards are never uploaded automatically. Your signed-in library stays separate from other users on this device.</p>
         </div>
       : <form className="account-body account-form" onSubmit={e => void submit(e)}>
@@ -40,6 +41,7 @@ export function AccountDialog({ user, status, recovery, initialMode = 'login', o
           {mode==='login' && <div className="account-links"><button type="button" onClick={() => setMode('signup')}>Create an account</button><button type="button" onClick={() => setMode('reset')}>Forgot password?</button></div>}
           {(mode==='signup'||mode==='reset') && <button type="button" className="account-back" onClick={() => setMode('login')}>Back to sign in</button>}
         </form>}
+      <label className="analytics-preference"><input type="checkbox" defaultChecked={analyticsEnabled()} onChange={e=>setAnalyticsEnabled(e.target.checked)}/> Share product usage counts to improve PitchPlay. No tactic content or passwords are tracked. Successful account sign-ins may be emailed to the two PitchPlay founders for security and operations.</label>
       {(message || error) && <div className={'account-alert '+(error?'error':'') } role="status">{error || message}</div>}
     </section>
   </div>;

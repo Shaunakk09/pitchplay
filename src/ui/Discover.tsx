@@ -3,6 +3,7 @@ import type { Board } from '../domain/types';
 import { PhaseThumb } from './PhaseRail';
 import { Icon } from './kit';
 import { BrandMark } from './BrandMark';
+import { trackEvent } from '../store/analytics';
 import * as ops from '../domain/ops';
 import { putBoard } from '../store/db';
 import { currentUser } from '../store/cloud';
@@ -29,6 +30,7 @@ export function DiscoverPage({ onBack,onOpen,onFork,onSignIn,accountControl }: {
     finally{setLoading(false);}
   }
   useEffect(()=>{void refresh();},[]);
+  useEffect(()=>{trackEvent('discover_opened','discover');},[]);
   const visible=useMemo(()=>items.filter(b=>{
     const text=[b.title,b.description,b.tags.join(' '),b.format].join(' ').toLowerCase();
     return (format==='All formats'||b.format===format)&&text.includes(query.toLowerCase().trim());
@@ -42,6 +44,7 @@ export function DiscoverPage({ onBack,onOpen,onFork,onSignIn,accountControl }: {
     setBusy(id);
     try {
       await favoriteBoard(id,add);
+      trackEvent('bookmark_changed','discover',add?'added':'removed');
       setFavorites(v=>add?[...v,id]:v.filter(x=>x!==id));
     } catch(e){setError(e instanceof Error?e.message:'Could not save bookmark');}
     finally{setBusy(null);}
@@ -69,7 +72,7 @@ export function DiscoverPage({ onBack,onOpen,onFork,onSignIn,accountControl }: {
       <div className="community-heading"><div><span className="community-kicker">COMMUNITY PLAYBOOK</span><h2>Public tactics <small>{items.length}</small></h2></div>
         <p>Every tactic here was explicitly published by its owner.</p></div>
       <div className="community-filters">
-        <label className="community-search"><Icon name="search" size={19}/><input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search tactics, styles, or keywords" aria-label="Search public tactics"/></label>
+        <label className="community-search"><Icon name="search" size={19}/><input type="search" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&query.trim())trackEvent('search_used','discover');}} placeholder="Search tactics, styles, or keywords" aria-label="Search public tactics"/></label>
         <select value={format} onChange={e=>setFormat(e.target.value)} aria-label="Filter by format">{options.map(v=><option key={v}>{v}</option>)}</select>
         <select value={sort} onChange={e=>setSort(e.target.value as 'newest'|'oldest')} aria-label="Sort tactics"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select>
       </div>
@@ -102,7 +105,7 @@ export function PendingInvitations({ onAccepted }: {onAccepted:()=>Promise<void>
     {error&&<p role="alert">{error}</p>}
     {invites.map(inv=><div className="community-invite" key={inv.id}><span><strong>You've been invited to a tactic</strong><small>Access: {inv.role==='editor'?'Can edit':'View only'} · {new Date(inv.created_at).toLocaleDateString()}</small></span><button type="button" className="community-primary" disabled={busy===inv.id} onClick={async()=>{
       setBusy(inv.id);setError('');
-      try{await acceptInvitation(inv);setInvites(v=>v.filter(x=>x.id!==inv.id));await onAccepted();}
+      try{await acceptInvitation(inv);trackEvent('invitation_accepted','playbook');setInvites(v=>v.filter(x=>x.id!==inv.id));await onAccepted();}
       catch(e){setError(e instanceof Error?e.message:'Could not accept invitation');}
       finally{setBusy(null);}
     }}>{busy===inv.id?'Joining…':'Accept invitation'}</button></div>)}

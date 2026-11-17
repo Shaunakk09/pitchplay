@@ -17,6 +17,7 @@ import { Stage } from './Stage';
 import { CollaborationDialog } from './Collaboration';
 import { fetchCloudBoard } from '../store/community';
 import { type BoardAccess } from '../store/cloud';
+import { trackEvent } from '../store/analytics';
 import { LINE_TYPES, devicePref, isLineTool, setDevicePref, useEditor, type Editor, type Tool } from './useEditor';
 
 function useMedia(query: string): boolean {
@@ -136,6 +137,7 @@ function EditorInner({ loaded, available, cloudAccess, onExit, onOpen }: { loade
     hideTimer.current = setTimeout(() => setPresentUi(false), PRESENT_HIDE_MS); // PARAM-37
   }, []);
   const startPresent = () => {
+    trackEvent('presentation_started','editor');
     ed.gestureRef.current.cancel();
     ed.clearSel();
     ed.setMenu(null);

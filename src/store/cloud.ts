@@ -10,6 +10,8 @@ export type CloudState = 'guest' | 'syncing' | 'saved' | 'offline' | 'conflict';
 
 type Query = { select: (...args: any[]) => any; eq: (...args: any[]) => any; in: (...args: any[]) => any; order: (...args: any[]) => any; limit: (...args: any[]) => any; maybeSingle: () => Promise<any>; single: () => Promise<any> };
 type Client = {
+  rpc(name: string, args?: Record<string, unknown>): Promise<{data:any;error:any}>;
+  functions: { invoke(name: string, opts?: {body?:unknown}): Promise<{data:any;error:any}> };
   auth: {
     getSession(): Promise<{ data: { session: { user: CloudUser } | null }; error: any }>;
     onAuthStateChange(cb: (event: string, session: { user: CloudUser } | null) => void): unknown;

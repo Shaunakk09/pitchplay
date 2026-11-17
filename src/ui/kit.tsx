@@ -47,6 +47,7 @@ const ICONS: Record<string, string> = {
   share: 'M18 8a3 3 0 100-6 3 3 0 000 6zM6 15a3 3 0 100-6 3 3 0 000 6zM18 22a3 3 0 100-6 3 3 0 000 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4',
   formation: 'M12 5m-2 0a2 2 0 104 0 2 2 0 10-4 0M5 13m-2 0a2 2 0 104 0 2 2 0 10-4 0M19 13m-2 0a2 2 0 104 0 2 2 0 10-4 0M12 19m-2 0a2 2 0 104 0 2 2 0 10-4 0',
   timing: 'M4 7h9M4 12h14M9 17h11',
+  chart: 'M3 3v18h18M7 17v-5M12 17V8M17 17V5',
 };
 
 export function Icon({ name, size = 20 }: { name: string; size?: number }) {

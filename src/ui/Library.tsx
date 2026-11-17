@@ -16,6 +16,7 @@ import { PendingInvitations } from './Discover';
 import { getBoardAccess, type BoardAccess } from '../store/cloud';
 import { InstallApp } from './InstallApp';
 import { BrandMark } from './BrandMark';
+import { trackEvent } from '../store/analytics';
 
 const ago = (iso: string) => {
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -25,7 +26,7 @@ const ago = (iso: string) => {
   return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id: string, initial?: Board, access?: BoardAccess) => void; onDiscover?: () => void; onInvitationsAccepted?: () => Promise<void>; accountControl?: ReactNode; cloudReady?: boolean }) {
+export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id: string, initial?: Board, access?: BoardAccess) => void; onDiscover?: () => void; onAnalytics?: () => void; onInvitationsAccepted?: () => Promise<void>; accountControl?: ReactNode; cloudReady?: boolean }) {
   const [boards, setBoards] = useState<Board[] | null>(null);
   const [available, setAvailable] = useState(true);
   const [nearlyFull, setNearlyFull] = useState(false);
@@ -62,7 +63,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
     if (!p) return;
     clearTimeout(p.timer);
     pendingDelete.current = null;
-    void deleteBoard(p.id);
+    void deleteBoard(p.id).then(()=>trackEvent('board_deleted','playbook'));
     setSnack(null);
   }, []);
   useEffect(() => () => finishDelete(), [finishDelete]);
@@ -75,6 +76,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
   const create = async (spec: ops.CreateSpec) => {
     const b = ops.createBoard(spec);
     await store(b).catch(() => props.sessionBoards.set(b.id, b)); // BRD-008: saved at once
+    trackEvent('board_created','playbook',spec.format);
     props.onOpen(b.id, available ? undefined : b);
   };
 
@@ -82,12 +84,14 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
   const openExample = async () => {
     const b = createSampleBoard();
     await store(b).catch(() => props.sessionBoards.set(b.id, b));
+    trackEvent('example_opened','playbook');
     props.onOpen(b.id, available ? undefined : b);
   };
 
   const duplicate = async (b: Board) => {
     const copy = ops.copyBoard(b, `${b.title} (copy)`); // BRD-011
     await store(copy);
+    trackEvent('board_duplicated','playbook');
     setHighlight(copy.id);
     await refresh();
   };
@@ -96,6 +100,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
     finishDelete();
     if (!available) {
       props.sessionBoards.delete(b.id);
+      trackEvent('board_deleted','playbook');
       return void refresh();
     }
     const versions = await listVersions(b.id);
@@ -118,6 +123,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
     const titles = new Set((boards ?? []).map((x) => x.title));
     const copy = ops.copyBoard(b, titles.has(b.title) ? `${b.title.slice(0, LEN.title - 4)} (2)` : b.title);
     await store(copy);
+    trackEvent('board_imported','playbook',b.format);
     setImportFile(null);
     props.onOpen(copy.id, available ? undefined : copy);
   };
@@ -137,7 +143,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
         { label: 'Open', run: () => props.onOpen(b.id, available ? undefined : b, access) },
         ...(access !== 'viewer' ? [{ label: 'Rename', run: () => setRenaming(b) }] : []),
         { label: 'Duplicate as my board', run: () => void duplicate(b) },
-        { label: 'Export project file', run: () => download(projectBlob(b), `${safeName(b.title)}.pitchplay`) },
+        { label: 'Export project file', run: () => {download(projectBlob(b), `${safeName(b.title)}.pitchplay`);trackEvent('export_completed','playbook','project');} },
         ...(access === 'owner' ? [{ label: 'Delete', danger: true, run: () => setDeleting(b) }] : []),
       ],
     });
@@ -164,6 +170,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
         <div className="brand-lockup"><BrandMark/><div><h1 className="wordmark">pitch<span>play.</span></h1><small>TACTICAL STUDIO</small></div></div>
         <nav className="lib-actions" aria-label="Workspace actions">
           <button type="button" className="btn nav-discover" onClick={props.onDiscover}><Icon name="search" size={18}/><span>Discover</span></button>
+          {props.onAnalytics && <button type="button" className="btn hide-narrow" onClick={props.onAnalytics}><Icon name="chart" size={18}/><span>Analytics</span></button>}
           <button type="button" className="btn hide-narrow" onClick={() => void openExample()}>Explore example</button>
           {props.accountControl}
         </nav>
@@ -268,7 +275,7 @@ export function Library(props: { sessionBoards: Map<string, Board>; onOpen: (id:
       )}
 
       {creating && <CreateSheet onClose={() => setCreating(false)} onCreate={(spec) => void create(spec)} />}
-      {renaming && <RenameDialog board={renaming} onClose={() => setRenaming(null)} onDone={async (title) => (await store({ ...renaming, title, revision: renaming.revision + 1, updatedAt: new Date().toISOString() }), setRenaming(null), refresh())} />}
+      {renaming && <RenameDialog board={renaming} onClose={() => setRenaming(null)} onDone={async (title) => (await store({ ...renaming, title, revision: renaming.revision + 1, updatedAt: new Date().toISOString() }), trackEvent('board_renamed','playbook'), setRenaming(null), refresh())} />}
       {deleting && (
         <Confirm
           title="Delete board"

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { Board } from '../domain/types';
 import type { BoardAccess } from '../store/cloud';
 import { currentUser } from '../store/cloud';
+import { trackEvent } from '../store/analytics';
 import { cloudHistory, getBoardSettings, inviteToBoard, listBoardPeople,
   publishBoard, removeBoardMember, removeInvite, setBoardRole,
   type BoardInvite, type BoardMember, type CloudRevision, type ShareSettings } from '../store/community';
@@ -54,7 +55,7 @@ export function CollaborationDialog({board,access,onClose,onRestore}:{
    e.preventDefault();
    const target=email.trim().toLowerCase();
    const ok=await task(()=>inviteToBoard(board.id,target,role),'Invitation created. Send the invitation email or share your playbook link.');
-   if(ok){setEmail('');setLastInvitedEmail(target);}
+   if(ok){trackEvent('invitation_sent','editor');setEmail('');setLastInvitedEmail(target);}
  }
  async function copyLink(){
    try{
@@ -85,7 +86,7 @@ export function CollaborationDialog({board,access,onClose,onRestore}:{
            </label><label className="collab-label">Tags (up to five, comma-separated)
              <input maxLength={120} value={tags} onChange={e=>setTags(e.target.value)} placeholder="pressing, build-up, counterattack" />
            </label><div className="collab-actions"><button className="community-secondary" disabled={busy} onClick={()=>void task(async()=>{await publishBoard(board.id,!!settings?.is_public,description,tags.split(','));},'Details saved')}>Save details</button>
-             <button className="community-primary" disabled={busy} onClick={()=>void task(async()=>{await publishBoard(board.id,!settings?.is_public,description,tags.split(','));},settings?.is_public?'Tactic unpublished':'Tactic published to Discover')}>{settings?.is_public?'Make private':'Publish to Discover'}</button></div></>}
+             <button className="community-primary" disabled={busy} onClick={()=>void task(async()=>{await publishBoard(board.id,!settings?.is_public,description,tags.split(','));trackEvent(settings?.is_public?'tactic_unpublished':'tactic_published','editor');},settings?.is_public?'Tactic unpublished':'Tactic published to Discover')}>{settings?.is_public?'Make private':'Publish to Discover'}</button></div></>}
            {!owner&&<p className="collab-muted">Only the owner can change publication settings.</p>}
          </section>
          {owner&&<section className="collab-card"><h3>Invite a teammate</h3><p className="collab-muted">Invite by email. Their invitation will appear in PitchPlay after they sign in with that confirmed email address.</p>
@@ -104,8 +105,8 @@ export function CollaborationDialog({board,access,onClose,onRestore}:{
              {members.length===0&&<p className="collab-muted">No teammates have accepted an invitation yet.</p>}
              {members.map(m=><div className="collab-person" key={m.user_id}>
                <span><strong>{m.member_email || 'Member · '+m.user_id.slice(0,8)}</strong><small>Joined {new Date(m.joined_at).toLocaleDateString()}</small></span>
-               <select aria-label="Member rights" value={m.role} disabled={busy} onChange={e=>void task(()=>setBoardRole(board.id,m.user_id,e.target.value as 'viewer'|'editor'),'Rights updated')}><option value="editor">Can edit</option><option value="viewer">View only</option></select>
-               <button disabled={busy} onClick={()=>void task(()=>removeBoardMember(board.id,m.user_id),'Access revoked')}>Remove</button>
+               <select aria-label="Member rights" value={m.role} disabled={busy} onChange={e=>void task(async()=>{await setBoardRole(board.id,m.user_id,e.target.value as 'viewer'|'editor');trackEvent('permission_changed','editor');},'Rights updated')}><option value="editor">Can edit</option><option value="viewer">View only</option></select>
+               <button disabled={busy} onClick={()=>void task(async()=>{await removeBoardMember(board.id,m.user_id);trackEvent('permission_changed','editor');},'Access revoked')}>Remove</button>
              </div>)}
              <h4>Invitations ({invites.filter(v=>v.status==='pending').length} pending)</h4>
              {invites.length===0&&<p className="collab-muted">No invitations yet.</p>}
@@ -114,7 +115,7 @@ export function CollaborationDialog({board,access,onClose,onRestore}:{
          </section>
        </div> : <div className="collab-stack">
          <section className="collab-card"><h3>Cloud change history</h3><p className="collab-muted">Each saved cloud revision is a snapshot, with who saved it and when. Up to the latest 100 snapshots are retained. The current board remains unchanged until you choose to restore.</p>
-           {!signedIn?<p>Sign in to view the private change history.</p>:revisions.length===0?<p className="collab-muted">No cloud revisions yet. Save your board and check again.</p>:<ol className="collab-history">{revisions.map((v,i)=><li key={v.id}><div className="collab-history-dot">{i===0?'●':'○'}</div><span className="collab-history-info"><strong>{v.action==='publish'?'Published':v.action==='unpublish'?'Made private':v.action==='create'?'Board created':'Tactic updated'}</strong><small>Version {v.remote_revision} · {new Date(v.created_at).toLocaleString()}</small><small>{v.actor_id===currentUser()?.id?'By you':v.actor_email?'By '+v.actor_email:v.actor_id?'By teammate '+v.actor_id.slice(0,8):'System'}</small></span>{editor&&<button type="button" disabled={busy||i===0} onClick={()=>{const ok=onRestore(v.board);if(ok){setNote('Older tactic restored as a new edit. Cloud saving will preserve it as another revision.');onClose();}else setError('Could not restore while editor is read-only or playing.');}}>Restore</button>}</li>)}</ol>}
+           {!signedIn?<p>Sign in to view the private change history.</p>:revisions.length===0?<p className="collab-muted">No cloud revisions yet. Save your board and check again.</p>:<ol className="collab-history">{revisions.map((v,i)=><li key={v.id}><div className="collab-history-dot">{i===0?'●':'○'}</div><span className="collab-history-info"><strong>{v.action==='publish'?'Published':v.action==='unpublish'?'Made private':v.action==='create'?'Board created':'Tactic updated'}</strong><small>Version {v.remote_revision} · {new Date(v.created_at).toLocaleString()}</small><small>{v.actor_id===currentUser()?.id?'By you':v.actor_email?'By '+v.actor_email:v.actor_id?'By teammate '+v.actor_id.slice(0,8):'System'}</small></span>{editor&&<button type="button" disabled={busy||i===0} onClick={()=>{const ok=onRestore(v.board);if(ok){trackEvent('version_restored','editor');setNote('Older tactic restored as a new edit. Cloud saving will preserve it as another revision.');onClose();}else setError('Could not restore while editor is read-only or playing.');}}>Restore</button>}</li>)}</ol>}
            <button type="button" className="community-secondary" disabled={busy} onClick={()=>void refresh()}>Refresh history</button>
          </section>
        </div>}
