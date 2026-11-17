@@ -33,7 +33,7 @@ export function AnalyticsPage({onBack,onSignIn}:{onBack:()=>void;onSignIn:()=>vo
       <div className="analytics-intro"><div><p className="analytics-kicker">PRIVATE PRODUCT ANALYTICS</p><h2>How PitchPlay is growing</h2><p>All dates use Singapore time (SGT). Rolling totals are today, last 7 days, last 30 days, and all recorded time.</p></div>{report&&<span className="analytics-updated">Updated {dateTime(report.generated_at)}</span>}</div>
       {!currentUser() && <div className="analytics-state"><h3>Founder sign-in required</h3><p>Sign in with an authorized, verified account to see private reporting.</p><button className="btn primary" onClick={onSignIn}>Sign in</button></div>}
       {loading&&<div className="analytics-state" role="status">Loading your analytics…</div>}
-      {!loading&&error&&<div className="analytics-state" role="alert"><h3>Report unavailable</h3><p>{error}</p><button className="btn primary" onClick={()=>void refresh()}>Try again</button></div>}
+      {!loading&&error&&currentUser()&&<div className="analytics-state" role="alert"><h3>Report unavailable</h3><p>{error}</p><button className="btn primary" onClick={()=>void refresh()}>Try again</button></div>}
       {report&&<>
         <section className="analytics-periods" aria-label="Summary by period">
           {([['today','Today'],['week','Past 7 days'],['month','Past 30 days'],['all','All time']] as const).map(([key,label])=>
